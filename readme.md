@@ -66,8 +66,3 @@ Run artisan server:
 php artisan serve
 ```
 
-## Kontributor
-Project ini dibuat oleh:
-- [@itsfaqih](https://github.com/itsfaqih) : Muhammad Faqih Muntashir
-- [@Denynecrom](https://github.com/Denynecrom) : Deny Setiyawan
-- [@anistya04](https://github.com/anistya04) : Anistya Dwi Setiawan
