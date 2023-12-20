@@ -13,10 +13,6 @@ Aplikasi Manajemen Kos dibuat dengan Laravel, Inertiajs, dan React
 
 Clone repo:
 
-```sh
-git clone https://github.com/itsfaqih/kos-manager.git
-cd kos-manager
-```
 
 Install PHP dependencies:
 
