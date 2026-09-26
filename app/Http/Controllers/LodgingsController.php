@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use App\Lodging;
 use App\Renter;
 use App\Room;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Redirect;
 
@@ -42,7 +43,15 @@ class LodgingsController extends Controller
 
     public function store()
     {
-        Lodging::create(Request::validate($this->validationRules()));
+        $data = Request::validate($this->validationRules());
+
+        if ($this->hasOverlappingLodging($data['room_id'], $data['start_at'], $data['end_at'])) {
+            return Redirect::back()->withErrors([
+                'room_id' => 'Kamar sudah memiliki penginapan pada rentang tanggal tersebut.',
+            ])->withInput();
+        }
+
+        Lodging::create($data);
 
         return Redirect::route('lodgings.index')->with('success', 'Data Penginapan berhasil ditambahkan.');
     }
@@ -75,7 +84,15 @@ class LodgingsController extends Controller
 
     public function update(Lodging $lodging)
     {
-        $lodging->update(Request::validate($this->validationRules()));
+        $data = Request::validate($this->validationRules());
+
+        if ($this->hasOverlappingLodging($data['room_id'], $data['start_at'], $data['end_at'], $lodging->id)) {
+            return Redirect::back()->withErrors([
+                'room_id' => 'Kamar sudah memiliki penginapan pada rentang tanggal tersebut.',
+            ])->withInput();
+        }
+
+        $lodging->update($data);
 
         return Redirect::back()->with('success', 'Data Penginapan berhasil diperbarui.');
     }
@@ -102,5 +119,23 @@ class LodgingsController extends Controller
             'start_at' => ['required', 'date'],
             'end_at' => ['required', 'date', 'after_or_equal:start_at'],
         ];
+    }
+
+    private function hasOverlappingLodging($roomId, $startAt, $endAt, $ignoreId = null)
+    {
+        $start = Carbon::parse($startAt);
+        $end = Carbon::parse($endAt);
+
+        return Lodging::query()
+            ->where('room_id', $roomId)
+            ->whereNull('deleted_at')
+            ->when($ignoreId, function ($query) use ($ignoreId) {
+                $query->where('id', '!=', $ignoreId);
+            })
+            ->whereNotNull('start_at')
+            ->whereNotNull('end_at')
+            ->where('start_at', '<=', $end)
+            ->where('end_at', '>=', $start)
+            ->exists();
     }
 }
