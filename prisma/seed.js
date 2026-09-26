@@ -76,6 +76,26 @@ async function main() {
     });
   }
 
+  // Demo inventory: 10 additional rooms, split into two monthly price tiers.
+  // Room numbers 102-106 are Rp1.000.000/month; 107-111 are Rp2.000.000/month.
+  const demoRooms = [
+    ...Array.from({ length: 5 }, (_, i) => ({ number: String(102 + i), costPerMonth: 1000000 })),
+    ...Array.from({ length: 5 }, (_, i) => ({ number: String(107 + i), costPerMonth: 2000000 })),
+  ];
+  for (const room of demoRooms) {
+    const existing = await db.room.findFirst({ where: { number: room.number } });
+    if (existing) {
+      await db.room.update({
+        where: { id: existing.id },
+        data: { length: 3, width: 4, costPerMonth: room.costPerMonth, deletedAt: null },
+      });
+    } else {
+      await db.room.create({
+        data: { number: room.number, length: 3, width: 4, costPerMonth: room.costPerMonth, facilities: 'Bed' },
+      });
+    }
+  }
+
   console.log('Demo accounts seeded.');
 }
 
