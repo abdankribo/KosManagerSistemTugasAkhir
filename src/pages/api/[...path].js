@@ -59,7 +59,10 @@ export default async function handler(req,res){
   if(!sessionUserId) return res.status(401).json({error:'Unauthorized'});
   const sessionUser=await db.user.findFirst({where:{id:sessionUserId,deletedAt:null},select:{id:true,owner:true}});
   if(!sessionUser) return res.status(401).json({error:'Unauthorized'});
-  if(resource==='users'&&!sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
+  const adminOnly = resource === 'users';
+  const userCanWrite = ['rooms','renters','lodgings','bills','invoices','payments'].includes(resource);
+  if(adminOnly && !sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
+  if(!sessionUser.owner && !userCanWrite && req.method !== 'GET') return res.status(403).json({error:'Akun User tidak memiliki izin untuk mengubah data ini'});
   const model=db[cfg[resource].model];
   try{
     if(req.method==='GET'){
@@ -77,6 +80,12 @@ export default async function handler(req,res){
     }
     if(req.method==='POST'){
       const data=clean(resource,req.body);
+      if(resource==='users' && !sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
+      if(!sessionUser.owner){
+        delete data.accountId;
+        delete data.owner;
+        delete data.password;
+      }
       if(resource==='users'){
         if(!data.accountId){const account=await db.account.findFirst();if(!account)throw Error('Buat account terlebih dahulu');data.accountId=account.id;}
         if(!data.password||String(data.password).length<8) throw Error('Password minimal 8 karakter');
@@ -88,6 +97,11 @@ export default async function handler(req,res){
     }
     if(req.method==='PUT'&&id){
       const data=clean(resource,req.body);
+      if(resource==='users' && !sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
+      if(!sessionUser.owner){
+        delete data.accountId;
+        delete data.owner;
+      }
       if(resource==='users'&&data.password){
         if(String(data.password).length<8) throw Error('Password minimal 8 karakter');
         data.password=await bcrypt.hash(data.password,12);
@@ -96,7 +110,10 @@ export default async function handler(req,res){
       if(resource==='lodgings'&&await overlap(data.roomId,data.startAt,data.endAt,id)) throw Error('Periode kamar bertabrakan dengan penginapan lain');
       return res.json(await model.update({where:{id},data}));
     }
-    if(req.method==='DELETE'&&id) return res.json(await model.update({where:{id},data:{deletedAt:new Date()}}));
+    if(req.method==='DELETE'&&id){
+      if(!sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat menghapus data'});
+      return res.json(await model.update({where:{id},data:{deletedAt:new Date()}}));
+    }
     return res.status(405).json({error:'Method tidak diizinkan'});
   }catch(e){return res.status(400).json({error:e?.message||'Permintaan tidak valid'});}
 }
