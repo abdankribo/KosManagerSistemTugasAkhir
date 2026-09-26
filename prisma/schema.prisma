@@ -25,6 +25,8 @@ model User {
   email        String   @unique
   password     String?
   owner        Boolean  @default(false)
+  role         String   @default("STAFF")
+  renterId     Int?     @unique @map("renter_id")
   photoPath    String?  @map("photo_path")
   rememberToken String?  @map("remember_token")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -81,7 +83,7 @@ model Bill {
   perMonth    Boolean  @map("per_month")
   deletedAt   DateTime? @map("deleted_at")
   createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @updated_at
   @@map("bills")
 }
 
@@ -95,12 +97,18 @@ model Invoice {
 }
 
 model Payment {
-  id          Int      @id @default(autoincrement())
-  invoiceId   Int      @map("invoice_id")
-  description String
-  amount      Int
-  deletedAt   DateTime? @map("deleted_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                Int      @id @default(autoincrement())
+  invoiceId         Int      @map("invoice_id")
+  description       String
+  amount            Int
+  status            String   @default("PENDING")
+  paymentDate       DateTime? @map("payment_date")
+  proofData         String?  @db.LongText @map("proof_data")
+  proofName         String?  @map("proof_name")
+  verifiedAt        DateTime? @map("verified_at")
+  verifiedByUserId  Int?     @map("verified_by_user_id")
+  deletedAt         DateTime? @map("deleted_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
   @@map("payments")
 }
