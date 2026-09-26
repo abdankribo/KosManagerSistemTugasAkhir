@@ -38,7 +38,7 @@ jobs:
         run: npx prisma generate
 
       - name: Create or synchronize production schema
-        run: npx prisma db push --skip-generate
+        run: npx prisma db push --skip-generate --accept-data-loss
 
       - name: Seed production accounts
         run: npm run seed
