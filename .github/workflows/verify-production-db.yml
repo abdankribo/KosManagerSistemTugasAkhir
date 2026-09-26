@@ -1,0 +1,48 @@
+name: Verify Production MySQL
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate database secret
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::PRODUCTION_DATABASE_URL belum dikonfigurasi di GitHub Secrets."
+            exit 1
+          fi
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Test production MySQL connection
+        run: |
+          node --input-type=module <<'NODE'
+          import { PrismaClient } from '@prisma/client';
+          const db = new PrismaClient();
+          try {
+            const result = await db.$queryRaw`SELECT 1 AS connected`;
+            console.log('MySQL connection OK:', result);
+          } finally {
+            await db.$disconnect();
+          }
+          NODE
+
+      - name: Inspect production schema without changing it
+        run: npx prisma db pull --print
