@@ -1,5 +1,98 @@
-import {db} from '../../lib/db';import bcrypt from 'bcryptjs';
-const cfg={users:{model:'user',fields:['firstName','lastName','email','password','owner','photoPath','accountId']},rooms:{model:'room',fields:['number','length','width','facilities','costPerMonth']},renters:{model:'renter',fields:['nik','name','gender','phoneNumber','address']},lodgings:{model:'lodging',fields:['renterId','roomId','startAt','endAt']},bills:{model:'bill',fields:['lodgingId','name','description','amount','perMonth']},invoices:{model:'invoice',fields:['billId']},payments:{model:'payment',fields:['invoiceId','description','amount']}};
-function clean(resource,body){const out={};for(const k of cfg[resource].fields)if(body[k]!==undefined){let v=body[k];if(['length','width','costPerMonth','amount','accountId','renterId','roomId','lodgingId','billId','invoiceId'].includes(k))v=Number(v);if(['owner','perMonth'].includes(k))v=Boolean(v);if(['startAt','endAt'].includes(k))v=v?new Date(v):null;out[k]=v}return out}
-function validate(resource,d){if(resource==='rooms'&&d.facilities){const a=String(d.facilities).split(',').map(x=>x.trim()).filter(Boolean);if(a.some(x=>!['AC','Bed','Bathroom','Furniture'].includes(x)))throw Error('Fasilitas tidak valid')}if(resource==='renters'){if(!/^\d{16}$/.test(d.nik||''))throw Error('NIK harus 16 digit');if(!/^\d{10,15}$/.test(d.phoneNumber||''))throw Error('Nomor telepon harus 10-15 digit');if(!['Laki-Laki','Perempuan'].includes(d.gender))throw Error('Jenis kelamin tidak valid')}if(['rooms','bills','payments'].includes(resource)&&d.amount!==undefined&&d.amount<1)throw Error('Nominal harus lebih dari 0');if(resource==='lodgings'&&d.startAt&&d.endAt&&d.endAt<d.startAt)throw Error('Tanggal selesai tidak boleh sebelum tanggal mulai')}
-export default async function handler(req,res){const cookies=req.headers.cookie||'';const auth=/user_id=\d+/.test(cookies);const parts=req.query.path||[];if(parts[0]&&!['auth','health'].includes(parts[0])&&!auth)return res.status(401).json({error:'Unauthorized'});const resource=parts[0];const id=parts[1]?Number(parts[1]):null;if(resource==='auth'&&parts[1]==='login'&&req.method==='POST'){const u=await db.user.findFirst({where:{email:req.body.email,deletedAt:null}});if(!u||!u.password||!(await bcrypt.compare(req.body.password||'',u.password)))return res.status(401).json({error:'Email atau password salah'});res.setHeader('Set-Cookie',`user_id=\${u.id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);return res.json({ok:true})}if(resource==='auth'&&parts[1]==='logout'){res.setHeader('Set-Cookie','user_id=; Path=/; Max-Age=0');return res.json({ok:true})}if(resource==='health')try{await db.$queryRaw\`SELECT 1\`;return res.json({ok:true})}catch(e){return res.status(503).json({ok:false,error:e.message})}if(!cfg[resource])return res.status(404).json({error:'Resource tidak ditemukan'});const model=db[cfg[resource].model];try{if(req.method==='GET'){if(id){const item=await model.findUnique({where:{id}});return res.json(item||{})}return res.json(await model.findMany({where:{deletedAt:null},orderBy:{id:'desc'}}))}if(req.method==='POST'){const data=clean(resource,req.body);if(resource==='users'){if(!data.accountId){const account=await db.account.findFirst();if(!account)throw Error('Buat account terlebih dahulu');data.accountId=account.id}if(data.password)data.password=await bcrypt.hash(data.password,12)}validate(resource,data);if(resource==='lodgings'&&data.startAt&&data.endAt){const overlap=await db.lodging.findFirst({where:{roomId:data.roomId,deletedAt:null,startAt:{lte:data.endAt},endAt:{gte:data.startAt}}});if(overlap)throw Error('Periode kamar bertabrakan dengan penginapan lain')}return res.status(201).json(await model.create({data}))}if(req.method==='PUT'&&id){const data=clean(resource,req.body);if(resource==='users'&&data.password)data.password=await bcrypt.hash(data.password,12);validate(resource,data);if(resource==='lodgings'&&data.startAt&&data.endAt){const overlap=await db.lodging.findFirst({where:{roomId:data.roomId,deletedAt:null,id:{not:id},startAt:{lte:data.endAt},endAt:{gte:data.startAt}}});if(overlap)throw Error('Periode kamar bertabrakan dengan penginapan lain')}return res.json(await model.update({where:{id},data}))}if(req.method==='DELETE'&&id)return res.json(await model.update({where:{id},data:{deletedAt:new Date()}}));return res.status(405).end()}catch(e){return res.status(400).json({error:e.message})}}
+import { db } from '../../lib/db';
+import bcrypt from 'bcryptjs';
+import { getSession } from '../../lib/auth';
+
+const cfg = {
+  users:{model:'user',fields:['firstName','lastName','email','password','owner','photoPath','accountId']},
+  rooms:{model:'room',fields:['number','length','width','facilities','costPerMonth']},
+  renters:{model:'renter',fields:['nik','name','gender','phoneNumber','address']},
+  lodgings:{model:'lodging',fields:['renterId','roomId','startAt','endAt']},
+  bills:{model:'bill',fields:['lodgingId','name','description','amount','perMonth']},
+  invoices:{model:'invoice',fields:['billId']},
+  payments:{model:'payment',fields:['invoiceId','description','amount']}
+};
+const numeric=new Set(['length','width','costPerMonth','amount','accountId','renterId','roomId','lodgingId','billId','invoiceId']);
+const boolean=new Set(['owner','perMonth']);
+
+function clean(resource,body={}) {
+  const out={};
+  for(const key of cfg[resource].fields){
+    if(body[key]===undefined) continue;
+    let value=body[key];
+    if(numeric.has(key)) value=Number(value);
+    if(boolean.has(key)) value=value===true||value==='true'||value===1||value==='1';
+    if(['startAt','endAt'].includes(key)) value=value?new Date(value):null;
+    if(typeof value==='string') value=value.trim();
+    out[key]=value;
+  }
+  return out;
+}
+function validate(resource,d){
+  if(resource==='rooms'){
+    if(!d.number) throw Error('Nomor kamar wajib diisi');
+    if(!Number.isFinite(d.length)||d.length<=0||!Number.isFinite(d.width)||d.width<=0) throw Error('Ukuran kamar harus lebih dari 0');
+    if(!Number.isFinite(d.costPerMonth)||d.costPerMonth<0) throw Error('Biaya bulanan tidak valid');
+    const a=String(d.facilities||'').split(',').map(x=>x.trim()).filter(Boolean);
+    if(a.some(x=>!['AC','Bed','Bathroom','Furniture'].includes(x))) throw Error('Fasilitas tidak valid');
+    d.facilities=a.join(',');
+  }
+  if(resource==='renters'){
+    if(!/^\d{16}$/.test(d.nik||'')) throw Error('NIK harus 16 digit');
+    if(!/^\d{10,15}$/.test(d.phoneNumber||'')) throw Error('Nomor telepon harus 10-15 digit');
+    if(!['Laki-Laki','Perempuan'].includes(d.gender)) throw Error('Jenis kelamin tidak valid');
+    if(!d.name||!d.address) throw Error('Nama dan alamat wajib diisi');
+  }
+  if(['bills','payments'].includes(resource)&&(!Number.isFinite(d.amount)||d.amount<=0)) throw Error('Nominal harus lebih dari 0');
+  if(resource==='lodgings'){
+    if(!Number.isInteger(d.renterId)||!Number.isInteger(d.roomId)) throw Error('Penyewa dan kamar wajib dipilih');
+    if(d.startAt&&d.endAt&&d.endAt<d.startAt) throw Error('Tanggal selesai tidak boleh sebelum tanggal mulai');
+  }
+}
+async function overlap(roomId,startAt,endAt,exceptId){
+  if(!startAt||!endAt) return false;
+  return !!await db.lodging.findFirst({where:{roomId,deletedAt:null,id:exceptId?{not:exceptId}:undefined,startAt:{lte:endAt},endAt:{gte:startAt}}});
+}
+export default async function handler(req,res){
+  const parts=req.query.path||[],resource=parts[0],id=parts[1]?Number(parts[1]):null;
+  if(!cfg[resource]) return res.status(404).json({error:'Resource tidak ditemukan'});
+  if(!(await getSession(req))) return res.status(401).json({error:'Unauthorized'});
+  const model=db[cfg[resource].model];
+  try{
+    if(req.method==='GET'){
+      if(id){
+        const item=await model.findFirst({where:{id,deletedAt:null}});
+        return res.json(item||{});
+      }
+      const q=String(req.query.q||'').trim();
+      let where={deletedAt:null};
+      if(q&&['rooms','renters','bills','payments'].includes(resource)){
+        const field=resource==='rooms'?'number':resource==='renters'?'name':resource==='bills'?'name':'description';
+        where={...where,[field]:{contains:q}};
+      }
+      return res.json(await model.findMany({where,orderBy:{id:'desc'},take:200}));
+    }
+    if(req.method==='POST'){
+      const data=clean(resource,req.body);
+      if(resource==='users'){
+        if(!data.accountId){const account=await db.account.findFirst();if(!account)throw Error('Buat account terlebih dahulu');data.accountId=account.id;}
+        if(!data.password||String(data.password).length<8) throw Error('Password minimal 8 karakter');
+        data.password=await bcrypt.hash(data.password,12);
+      }
+      validate(resource,data);
+      if(resource==='lodgings'&&await overlap(data.roomId,data.startAt,data.endAt)) throw Error('Periode kamar bertabrakan dengan penginapan lain');
+      return res.status(201).json(await model.create({data}));
+    }
+    if(req.method==='PUT'&&id){
+      const data=clean(resource,req.body);
+      if(resource==='users'&&data.password){
+        if(String(data.password).length<8) throw Error('Password minimal 8 karakter');
+        data.password=await bcrypt.hash(data.password,12);
+      }
+      validate(resource,data);
+      if(resource==='lodgings'&&await overlap(data.roomId,data.startAt,data.endAt,id)) throw Error('Periode kamar bertabrakan dengan penginapan lain');
+      return res.json(await model.update({where:{id},data}));
+    }
+    if(req.method==='DELETE'&&id) return res.json(await model.update({where:{id},data:{deletedAt:new Date()}}));
+    return res.status(405).json({error:'Method tidak diizinkan'});
+  }catch(e){return res.status(400).json({error:e?.message||'Permintaan tidak valid'});}
+}

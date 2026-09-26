@@ -1,1 +1,7 @@
-export default function handler(req,res){res.setHeader('Set-Cookie','user_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');res.json({ok:true})}
+import { clearSession } from '../../../lib/auth';
+
+export default function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method tidak diizinkan' });
+  clearSession(res);
+  return res.json({ ok: true });
+}
