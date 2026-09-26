@@ -77,9 +77,9 @@ export default async function handler(req,res){
   const role=sessionUser.owner?'ADMIN':(sessionUser.role==='TENANT'?'TENANT':'STAFF');
   if(role==='TENANT') return res.status(403).json({error:'Akun Penyewa hanya dapat menggunakan portal pembayaran.'});
 
-  const adminOnly = resource === 'users';
+  const adminOnly = resource === 'users' || resource === 'rooms';
   const userCanWrite = ['rooms','renters','lodgings','bills','invoices','payments'].includes(resource);
-  if(adminOnly && role!=='ADMIN') return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
+  if(adminOnly && role!=='ADMIN') return res.status(403).json({error:resource==='rooms'?'Hanya administrator yang dapat menambah atau mengubah data kamar':'Hanya administrator yang dapat mengelola pengguna'});
   if(role!=='ADMIN' && !userCanWrite && req.method!=='GET') return res.status(403).json({error:'Akun User tidak memiliki izin untuk mengubah data ini'});
 
   const model=db[cfg[resource].model];
