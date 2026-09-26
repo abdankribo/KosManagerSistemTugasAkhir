@@ -8,6 +8,8 @@ async function main() {
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
   const userUsername = process.env.SEED_USER_USERNAME;
   const userPassword = process.env.SEED_USER_PASSWORD;
+  const tenantUsername = process.env.SEED_TENANT_USERNAME;
+  const tenantPassword = process.env.SEED_TENANT_PASSWORD;
 
   if (!adminUsername || !adminPassword || !userUsername || !userPassword) {
     throw new Error('Set SEED_ADMIN_USERNAME, SEED_ADMIN_PASSWORD, SEED_USER_USERNAME, and SEED_USER_PASSWORD before running the seed.');
@@ -20,9 +22,33 @@ async function main() {
   });
 
   const users = [
-    { username: adminUsername, password: adminPassword, owner: true, firstName: 'Admin', lastName: '' },
-    { username: userUsername, password: userPassword, owner: false, firstName: 'User', lastName: '' },
+    { username: adminUsername, password: adminPassword, role: 'ADMIN', owner: true, firstName: 'Admin', lastName: '', renterId: null },
+    { username: userUsername, password: userPassword, role: 'STAFF', owner: false, firstName: 'User', lastName: '', renterId: null },
   ];
+
+  if (tenantUsername && tenantPassword) {
+    let renter = await db.renter.findFirst({ where: { name: 'Demo Penyewa', deletedAt: null } });
+    if (!renter) {
+      renter = await db.renter.create({
+        data: {
+          nik: '0000000000000000',
+          name: 'Demo Penyewa',
+          gender: 'Laki-Laki',
+          phoneNumber: '081234567890',
+          address: 'Data demo tenant',
+        },
+      });
+    }
+    users.push({
+      username: tenantUsername,
+      password: tenantPassword,
+      role: 'TENANT',
+      owner: false,
+      firstName: 'Penyewa',
+      lastName: 'Demo',
+      renterId: renter.id,
+    });
+  }
 
   for (const item of users) {
     await db.user.upsert({
@@ -30,6 +56,8 @@ async function main() {
       update: {
         password: await bcrypt.hash(item.password, 12),
         owner: item.owner,
+        role: item.role,
+        renterId: item.renterId,
         firstName: item.firstName,
         lastName: item.lastName,
         deletedAt: null,
@@ -42,6 +70,8 @@ async function main() {
         email: item.username.toLowerCase(),
         password: await bcrypt.hash(item.password, 12),
         owner: item.owner,
+        role: item.role,
+        renterId: item.renterId,
       },
     });
   }
