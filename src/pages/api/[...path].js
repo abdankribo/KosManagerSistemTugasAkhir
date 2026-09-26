@@ -87,6 +87,7 @@ export default async function handler(req,res){
     if(req.method==='GET'){
       if(id){
         const item=await model.findFirst({where:{id,deletedAt:null}});
+        if(resource==='users' && item) delete item.password;
         return res.json(item||{});
       }
       const q=String(req.query.q||'').trim();
@@ -95,7 +96,9 @@ export default async function handler(req,res){
         const field=resource==='rooms'?'number':resource==='renters'?'name':resource==='bills'?'name':'description';
         where={...where,[field]:{contains:q}};
       }
-      return res.json(await model.findMany({where,orderBy:{id:'desc'},take:200}));
+      const rows=await model.findMany({where,orderBy:{id:'desc'},take:200});
+      if(resource==='users') rows.forEach(row=>delete row.password);
+      return res.json(rows);
     }
 
     if(req.method==='POST'){
