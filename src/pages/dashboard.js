@@ -96,13 +96,28 @@ function TenantDashboard({user,logout}){
 
 export default function Dashboard(){
  const router=useRouter();
- const [data,setData]=useState(null),[user,setUser]=useState(null),[error,setError]=useState('');
+ const [data,setData]=useState(null),[user,setUser]=useState(null),[error,setError]=useState(''),[roomOverview,setRoomOverview]=useState({date:new Date().toISOString().slice(0,10),rooms:[],available:[]});
  useEffect(()=>{
   Promise.all([fetch('/api/auth/me'),fetch('/api/dashboard')]).then(async([a,b])=>{
    if(!a.ok||!b.ok){router.replace('/login');return;}
    setUser((await a.json()).user);setData(await b.json());
   }).catch(()=>setError('Gagal memuat dashboard'));
  },[router]);
+ useEffect(()=>{
+  if(!user||user.owner||user.role==='TENANT')return;
+  loadRoomOverview(roomOverview.date);
+ },[user]);
+ async function loadRoomOverview(date){
+  try{
+   const [roomsRes,availableRes]=await Promise.all([
+    fetch('/api/rooms'),
+    fetch('/api/rooms/available?date='+encodeURIComponent(date))
+   ]);
+   if(!roomsRes.ok||!availableRes.ok)return;
+   const [rooms,available]=await Promise.all([roomsRes.json(),availableRes.json()]);
+   setRoomOverview({date,rooms,available});
+  }catch{}
+ }
  async function logout(){await fetch('/api/auth/logout',{method:'POST'});router.replace('/login');}
  if(error)return <main className="center">{error}</main>;
  if(!data||!user)return <main className="center">Memuat dashboard...</main>;
@@ -138,6 +153,28 @@ export default function Dashboard(){
    <div className="userContent">
     <section className="userGreeting"><div><span className="userEyebrow">WORKSPACE KARYAWAN</span><h1>Selamat datang kembali,<br/><strong>{user.firstName || 'User'}!</strong></h1><p>Berikut ringkasan aktivitas operasional kos Anda hari ini.</p></div><div className="userGreetingMeta"><div className="userCalendar">▣</div><div><strong>Workspace aktif</strong><span>Akses pengelolaan kos</span></div></div></section>
     <section className="userStatsGrid"><a href="/rooms" className="userStatCard statBlue"><div className="statIcon">▣</div><div><span>Total Kamar</span><strong>{data.rooms}</strong><small>Lihat ketersediaan kamar <b>→</b></small></div></a><a href="/renters" className="userStatCard statGreen"><div className="statIcon">♙</div><div><span>Total Penyewa</span><strong>{data.renters}</strong><small>Kelola data penyewa <b>→</b></small></div></a><a href="/bills" className="userStatCard statPurple"><div className="statIcon">▤</div><div><span>Total Tagihan</span><strong>{data.bills}</strong><small>Lihat tagihan penyewa <b>→</b></small></div></a><a href="/payments" className="userStatCard statOrange"><div className="statIcon">✓</div><div><span>Menunggu Verifikasi</span><strong>{data.pendingPayments||0}</strong><small>Periksa bukti pembayaran <b>→</b></small></div></a></section>
+    <section className="staffRoomAvailability">
+     <div className="staffRoomHead">
+      <div><span className="userEyebrow">KETERSEDIAAN KAMAR</span><h2>Kamar kosong & terisi</h2><p>Pilih tanggal untuk melihat kamar yang masih dapat disewakan.</p></div>
+      <label>Tanggal pengecekan<input type="date" value={roomOverview.date} onChange={e=>loadRoomOverview(e.target.value)}/></label>
+     </div>
+     <div className="staffRoomSummary">
+      <div><span>Tersedia</span><strong>{roomOverview.rooms.filter(r=>roomOverview.available.some(a=>a.id===r.id)).length}</strong></div>
+      <div><span>Terisi</span><strong>{Math.max(0,roomOverview.rooms.length-roomOverview.rooms.filter(r=>roomOverview.available.some(a=>a.id===r.id)).length)}</strong></div>
+      <div><span>Total</span><strong>{roomOverview.rooms.length}</strong></div>
+     </div>
+     <div className="staffRoomGrid">
+      {roomOverview.rooms.map(room=>{
+       const available=roomOverview.available.some(r=>r.id===room.id);
+       return <a className={'staffRoomCard '+(available?'isAvailable':'isOccupied')} href="/renters" key={room.id}>
+        <div className="staffRoomCardTop"><strong>Kamar {room.number}</strong><span>{available?'KOSONG':'TERISI'}</span></div>
+        <b>Rp {Number(room.costPerMonth||0).toLocaleString('id-ID')}<small>/bulan</small></b>
+        <small>{room.length||0} × {room.width||0} m · {room.facilities||'Tanpa fasilitas'}</small>
+       </a>;
+      })}
+     </div>
+     {!roomOverview.rooms.length&&<div className="empty">Belum ada data kamar.</div>}
+    </section>
     <section className="userSectionHead"><div><span className="userEyebrow">ALUR KERJA</span><h2>Kerjakan sesuai kebutuhan</h2><p>Mulai dari kamar dan penyewa, lalu pantau tagihan serta verifikasi pembayaran. Data penginapan dibuat otomatis saat menerima penyewa baru.</p></div></section>
     <section className="userActionGrid">{userActions.map(([title,desc,href],i)=><a href={href} className="userActionCard" key={href}><span className="actionStep">{i+1}</span><span className="actionCircle">{['▣','♙','▤','▣'][i]}</span><span><strong>{title}</strong><small>{desc}</small></span><b>→</b></a>)}</section>
     <section className="userBottomGrid"><div className="userInfoCard"><div className="userInfoHead"><div><span className="userEyebrow">PROFIL AKSES</span><h2>Akun Anda</h2></div><span className="userRolePill">KARYAWAN</span></div><div className="userProfileRow"><div className="userBigAvatar">U</div><div><strong>{user.firstName} {user.lastName}</strong><span>{user.email}</span><small>Akun pengelola operasional kos</small></div></div><div className="userAccessList"><div>✓ <span>Dapat mengelola data operasional</span></div><div>✓ <span>Dapat memverifikasi pembayaran</span></div><div>× <span>Pengaturan pengguna khusus Admin</span></div><div>× <span>Penghapusan data khusus Admin</span></div></div></div><div className="userQuoteCard"><span className="quoteMark">“</span><h2>Kelola data dengan rapi,<br/>layanan jadi lebih baik.</h2><p>Gunakan workspace ini untuk menjaga operasional kos tetap teratur.</p><div className="quoteDecor">KOS</div></div></section>
