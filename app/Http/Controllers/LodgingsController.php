@@ -6,7 +6,6 @@ use Inertia\Inertia;
 use App\Lodging;
 use App\Renter;
 use App\Room;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Redirect;
 
@@ -24,10 +23,10 @@ class LodgingsController extends Controller
                         'id' => $lodging->id,
                         'renter' => $lodging->renter,
                         'room' => $lodging->room,
-                        'start_at' => $lodging->start_at->format('d F Y'),
-                        'end_at' => $lodging->end_at->format('d F Y'),
+                        'start_at' => $lodging->start_at ? $lodging->start_at->format('d F Y') : '-',
+                        'end_at' => $lodging->end_at ? $lodging->end_at->format('d F Y') : '-',
                         'deleted_at' => $lodging->deleted_at,
-                        'status' => $lodging->getStatus()
+                        'status' => $lodging->getStatus(),
                     ];
                 }),
         ]);
@@ -36,21 +35,14 @@ class LodgingsController extends Controller
     public function create()
     {
         return Inertia::render('Lodgings/Create', [
-            'rooms' => Room::all(),
-            'renters' => Renter::all()
+            'rooms' => Room::available()->get(),
+            'renters' => Renter::all(),
         ]);
     }
 
     public function store()
     {
-        Lodging::create(
-            Request::validate([
-                'renter_id' => ['required', 'exists:renters,id'],
-                'room_id' => ['required', 'exists:rooms,id'],
-                'start_at' => ['required', 'date'],
-                'end_at' => ['required', 'date'],
-            ])
-        );
+        Lodging::create(Request::validate($this->validationRules()));
 
         return Redirect::route('lodgings.index')->with('success', 'Data Penginapan berhasil ditambahkan.');
     }
@@ -62,8 +54,8 @@ class LodgingsController extends Controller
                 'id' => $lodging->id,
                 'renter' => $lodging->renter,
                 'room' => $lodging->room,
-                'start_at' => $lodging->start_at->format('Y-m-d'),
-                'end_at' => $lodging->end_at->format('Y-m-d'),
+                'start_at' => $lodging->start_at ? $lodging->start_at->format('Y-m-d') : '',
+                'end_at' => $lodging->end_at ? $lodging->end_at->format('Y-m-d') : '',
                 'deleted_at' => $lodging->deleted_at,
                 'payments' => $lodging->payments->transform(function ($payment) {
                     return [
@@ -72,25 +64,18 @@ class LodgingsController extends Controller
                         'amount' => $payment->amount,
                         'issued_at' => $payment->invoice->created_at->format('d F Y'),
                         'created_at' => $payment->created_at->format('d F Y'),
-                        'deleted_at' => $payment->deleted_at
+                        'deleted_at' => $payment->deleted_at,
                     ];
-                })
+                }),
             ],
-            'rooms' => Room::all(),
+            'rooms' => Room::available()->orWhere('id', $lodging->room_id)->get(),
             'renters' => Renter::all(),
         ]);
     }
 
     public function update(Lodging $lodging)
     {
-        $lodging->update(
-            Request::validate([
-                'renter_id' => ['required', 'exists:renters,id'],
-                'room_id' => ['required', 'exists:rooms,id'],
-                'start_at' => ['required', 'date'],
-                'end_at' => ['required', 'date'],
-            ])
-        );
+        $lodging->update(Request::validate($this->validationRules()));
 
         return Redirect::back()->with('success', 'Data Penginapan berhasil diperbarui.');
     }
@@ -107,5 +92,15 @@ class LodgingsController extends Controller
         $lodging->restore();
 
         return Redirect::back()->with('success', 'Data Penginapan berhasil dipulihkan.');
+    }
+
+    private function validationRules()
+    {
+        return [
+            'renter_id' => ['required', 'exists:renters,id'],
+            'room_id' => ['required', 'exists:rooms,id'],
+            'start_at' => ['required', 'date'],
+            'end_at' => ['required', 'date', 'after_or_equal:start_at'],
+        ];
     }
 }
