@@ -5,10 +5,8 @@ import { InertiaLink, usePage } from '@inertiajs/inertia-react';
 import Layout from '@/Shared/Layout';
 import DeleteButton from '@/Shared/DeleteButton';
 import LoadingButton from '@/Shared/LoadingButton';
-import TextInput from '@/Shared/TextInput';
 import SelectInput from '@/Shared/SelectInput';
 import TrashedMessage from '@/Shared/TrashedMessage';
-import Icon from '@/Shared/Icon';
 
 export default () => {
   const { errors, invoice, bills } = usePage();
@@ -49,7 +47,7 @@ export default () => {
 
   return (
     <Layout>
-      <Helmet title={invoice.bill_id.name} />
+      <Helmet title={invoice.bill ? invoice.bill.name : `Penagihan #${invoice.id}`} />
       <div>
         <h1 className="mb-8 text-3xl font-bold">
           <InertiaLink
@@ -59,7 +57,7 @@ export default () => {
             Penagihan
           </InertiaLink>
           <span className="mx-2 font-medium text-indigo-600">/</span>
-          {values.name}
+          {invoice.bill ? invoice.bill.name : `#${invoice.id}`}
         </h1>
         {invoice.deleted_at && (
           <TrashedMessage onRestore={restore}>
@@ -70,18 +68,18 @@ export default () => {
           <form onSubmit={handleSubmit}>
             <div className="flex flex-wrap p-8 -mb-8 -mr-6">
               <SelectInput
-                className="w-full pb-8 pr-6 lg:w-1/2"
-                label="Tagihan "
+                className="w-full pb-8 pr-6"
+                label="Tagihan"
                 name="bill_id"
                 errors={errors.bill_id}
                 value={values.bill_id}
                 onChange={handleChange}
               >
                 <option value="" disabled>
-                  Pilih Bill
+                  Pilih Tagihan
                 </option>
-                {bills.map((bill, index) => (
-                  <option key={index} value={bill.id}>
+                {bills.map(bill => (
+                  <option key={bill.id} value={bill.id}>
                     {bill.name}
                   </option>
                 ))}
