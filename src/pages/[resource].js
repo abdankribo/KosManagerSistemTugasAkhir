@@ -2,7 +2,7 @@ import {useRouter} from 'next/router';
 import {useEffect,useMemo,useState} from 'react';
 
 const meta={
- users:{title:'Users',fields:[['firstName','Nama depan','text'],['lastName','Nama belakang','text'],['email','Email','email'],['password','Password','password']]},
+ users:{title:'Users',fields:[['firstName','Nama depan','text'],['lastName','Nama belakang','text'],['email','Email','email'],['password','Password','password'],['owner','Peran','role']]},
  rooms:{title:'Kamar',fields:[['number','Nomor kamar','text'],['length','Panjang (m)','number'],['width','Lebar (m)','number'],['costPerMonth','Biaya/bulan','number']]},
  renters:{title:'Penyewa',fields:[['nik','NIK','text'],['name','Nama','text'],['phoneNumber','Telepon','tel'],['address','Alamat','text']]},
  lodgings:{title:'Penginapan',fields:[['renterId','Penyewa','renter'],['roomId','Kamar','room'],['startAt','Mulai','datetime-local'],['endAt','Selesai','datetime-local']]},
@@ -26,7 +26,7 @@ function itemLabel(resource,x,refs){
  if(resource==='bills') return '#'+x.id+' · '+x.name+' · Rp '+Number(x.amount||0).toLocaleString('id-ID');
  if(resource==='invoices') return '#'+x.id+' · Tagihan #'+x.billId;
  if(resource==='payments') return '#'+x.id+' · Rp '+Number(x.amount||0).toLocaleString('id-ID')+' · '+x.description;
- return '#'+x.id+' · '+(x.firstName||'')+' '+(x.lastName||'')+' · '+x.email;
+ return '#'+x.id+' · '+(x.firstName||'')+' '+(x.lastName||'')+' · '+(x.owner?'Administrator':'User')+' · '+x.email;
 }
 
 export default function Resource(){
@@ -38,6 +38,7 @@ export default function Resource(){
   setLoading(true);
   const x=await fetch('/api/'+resource+(query?'?q='+encodeURIComponent(query):''));
   if(x.status===401){router.replace('/login');return;}
+  if(x.status===403){setError('Akses ditolak. Halaman Users hanya dapat diakses administrator.');setItems([]);setLoading(false);return;}
   setItems(x.ok?await x.json():[]);
   setLoading(false);
  }
@@ -75,12 +76,12 @@ export default function Resource(){
  }
  if(!info)return <main className="center">Memuat...</main>;
  return <main className="app">
-  <header className="topbar"><div><a className="brand" href="/dashboard">KOS MANAGER</a><div className="muted">Panel manajemen</div></div><nav>{nav.map(([h,t])=><a className={resource===h?'activeNav':''} href={'/'+h} key={h}>{t}</a>)}</nav><a href="/dashboard">Dashboard</a></header>
+  <header className="topbar"><div><a className="brand" href="/dashboard">KOS MANAGER</a><div className="muted">{resource==='users'?'Panel administrator':'Panel manajemen'}</div></div><nav>{resource==='users'&&<a className="activeNav" href="/users">Users</a>}{nav.map(([h,t])=><a className={resource===h?'activeNav':''} href={'/'+h} key={h}>{t}</a>)}</nav><a href="/dashboard">Dashboard</a></header>
   <section className="pageHead"><div><small>MANAGEMENT</small><h1>{info.title}</h1><p>Tambah, ubah, cari, dan hapus data {info.title.toLowerCase()}.</p></div><input className="search" placeholder="Cari data..." value={query} onChange={e=>setQuery(e.target.value)}/></section>
   {error&&<div className="error">{error}</div>}
   <section className="card"><div className="sectionTitle"><h2>{editing?'Edit data':'Tambah data'}</h2>{editing&&<button type="button" className="ghost" onClick={reset}>Batal</button>}</div>
    <form className="grid" onSubmit={save}>
-    {info.fields.map(([k,l,t])=><label key={k}>{l}{['renter','room','lodging','bill','invoice'].includes(t)?
+    {info.fields.map(([k,l,t])=><label key={k}>{l}{t==='role'?<select required value={String(form[k]??'false')} onChange={e=>change(k,e.target.value==='true')}><option value="false">User</option><option value="true">Administrator</option></select>:['renter','room','lodging','bill','invoice'].includes(t)?
       <select required value={form[k]??''} onChange={e=>change(k,e.target.value)}><option value="">Pilih {l.toLowerCase()}</option>{(refs[t]||[]).map(x=><option key={x.id} value={x.id}>{optionLabel(t,x)}</option>)}</select>
       :<input required={!['password','endAt'].includes(k)} type={t} value={form[k]??''} onChange={e=>change(k,e.target.value)}/>}</label>)}
     {resource==='renters'&&<label>Jenis kelamin<select required value={form.gender||''} onChange={e=>change('gender',e.target.value)}><option value="">Pilih</option><option>Laki-Laki</option><option>Perempuan</option></select></label>}
