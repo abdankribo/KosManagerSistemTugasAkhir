@@ -74,7 +74,7 @@ export default function Resource(){
   if(resource==='users'&&body.role!=='TENANT')body.renterId=null;
   const x=await fetch('/api/'+resource+(editing?'/'+editing:''),{method:editing?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!x.ok){setError((await x.json()).error||'Gagal menyimpan');return;}
-  if(resource==='users'&&body.role==='TENANT'&&!editing)setCreatedCredentials({username:body.email,password:form.password,name:[body.firstName,body.lastName].filter(Boolean).join(' ')}); reset();await load();await loadRefs();
+  if(resource==='users'&&body.role==='TENANT'&&!editing){setCreatedCredentials({username:body.email,password:form.password,name:[body.firstName,body.lastName].filter(Boolean).join(' ')});setForm({});setEditing(null);setError('');}else{reset();} await load();await loadRefs();
  }
  async function remove(id){
   if(!confirm('Hapus data ini? Data akan menjadi soft-deleted.'))return;
