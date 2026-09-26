@@ -36,7 +36,7 @@ function itemLabel(resource,x,refs){
 
 export default function Resource(){
  const router=useRouter(),resource=router.query.resource,info=meta[resource];
- const [items,setItems]=useState([]),[refs,setRefs]=useState({}),[form,setForm]=useState({}),[editing,setEditing]=useState(null),[error,setError]=useState(''),[query,setQuery]=useState(''),[loading,setLoading]=useState(true),[user,setUser]=useState(null),[createdCredentials,setCreatedCredentials]=useState(null);
+ const [items,setItems]=useState([]),[refs,setRefs]=useState({}),[form,setForm]=useState({}),[editing,setEditing]=useState(null),[error,setError]=useState(''),[query,setQuery]=useState(''),[loading,setLoading]=useState(true),[user,setUser]=useState(null),[createdCredentials,setCreatedCredentials]=useState(null),[availableRooms,setAvailableRooms]=useState([]),[onboardForm,setOnboardForm]=useState({startAt:new Date().toISOString().slice(0,10),gender:'Laki-Laki'}),[onboardResult,setOnboardResult]=useState(null);
 
  async function load(){
   if(!info)return;
@@ -56,7 +56,10 @@ export default function Resource(){
   setRefs(next);
  }
  useEffect(()=>{fetch('/api/auth/me').then(async r=>{if(!r.ok){router.replace('/login');return;}const body=await r.json();setUser(body.user);});},[router]);
- useEffect(()=>{load();loadRefs();},[resource,query]);
+ useEffect(()=>{load();loadRefs();if(resource==='renters'&&!user?.owner)loadAvailableRooms(onboardForm.startAt);},[resource,query,user?.owner]);
+ async function loadAvailableRooms(date){const x=await fetch('/api/rooms/available?date='+encodeURIComponent(date||new Date().toISOString().slice(0,10)));if(x.ok)setAvailableRooms(await x.json());}
+ function changeOnboard(k,v){setOnboardForm(f=>({...f,[k]:v}));if(k==='startAt')loadAvailableRooms(v);}
+ async function onboard(e){e.preventDefault();setError('');setOnboardResult(null);const x=await fetch('/api/tenant/onboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(onboardForm)});const body=await x.json().catch(()=>({}));if(!x.ok){setError(body.error||'Gagal menerima penyewa');return;}setOnboardResult(body);setOnboardForm({startAt:new Date().toISOString().slice(0,10),gender:'Laki-Laki'});await load();await loadAvailableRooms(new Date().toISOString().slice(0,10));}
  const refMaps=useMemo(()=>({renter:refs.renterMap||{}}),[refs]);
  function change(k,v){setForm(f=>({...f,[k]:v}));}
  function edit(item){
@@ -122,7 +125,23 @@ export default function Resource(){
   </section>)}
   {error&&<div className="error">{error}</div>}
   {resource==='users'&&createdCredentials&&<section className="card credentialCard"><div className="sectionTitle"><div><small>AKUN BERHASIL DIBUAT</small><h2>Serahkan akses ini kepada penyewa</h2></div><button type="button" className="ghost" onClick={()=>setCreatedCredentials(null)}>Tutup</button></div><p className="credentialNote">Simpan atau berikan kredensial ini kepada penyewa. Password hanya ditampilkan sekali di halaman ini.</p><div className="credentialGrid"><div><span>Username</span><strong>{createdCredentials.username}</strong></div><div><span>Password</span><strong>{createdCredentials.password}</strong></div></div><div className="credentialTip">Akun ini sudah terhubung ke data penyewa {createdCredentials.name||'tersebut'}.</div></section>}
-  <section className="featureGuide"><div className="featureGuideIcon">{resource==='rooms'?'▣':resource==='renters'?'♙':resource==='lodgings'?'⌂':resource==='bills'?'▤':resource==='payments'?'✓':resource==='invoices'?'▥':'U'}</div><div><span className="userEyebrow">TENTANG FITUR</span><h2>{info.title}</h2><p>{info.description}</p></div></section>
+  <section className="featureGuide"><div className="featureGuideIcon">{resource==='rooms'?'▣':resource==='renters'?'♙':resource==='lodgings'?'⌂':resource==='bills'?'▤':resource==='payments'?'✓':resource==='invoices'?'▥':'U'}</div><div><span className="userEyebrow">TENTANG FITUR</span><h2>{info.title}</h2><p>{resource==='renters'&&!user.owner?'Terima penyewa baru dalam satu langkah: pilih kamar yang tersedia, isi data penyewa, dan buat akun login sekaligus.':' '+info.description}</p></div></section>
+  {resource==='renters'&&!user.owner ? <section className="card onboardingCard">
+    <div className="sectionTitle"><div><small>PROSES PENYEWA BARU</small><h2>Terima penyewa</h2><p className="sectionHint">Pilih kamar yang tersedia, masukkan data penyewa, lalu sistem otomatis membuat penginapan, tagihan sewa, invoice, dan akun penyewa.</p></div></div>
+    {onboardResult&&<div className="onboardSuccess"><strong>Penyewa berhasil ditambahkan.</strong><span>Kamar {onboardResult.room.number} · Rp {Number(onboardResult.room.costPerMonth).toLocaleString('id-ID')}/bulan</span><span>Username: <b>{onboardResult.tenant.username}</b></span><span>Berikan username dan password yang kamu buat kepada penyewa.</span></div>}
+    <form className="grid" onSubmit={onboard}>
+      <label>Tanggal mulai<input required type="date" value={onboardForm.startAt||''} onChange={e=>changeOnboard('startAt',e.target.value)}/></label>
+      <label>Kamar tersedia<select required value={onboardForm.roomId||''} onChange={e=>changeOnboard('roomId',e.target.value)}><option value="">Pilih kamar</option>{availableRooms.map(x=><option key={x.id} value={x.id}>Kamar {x.number} · Rp {Number(x.costPerMonth).toLocaleString('id-ID')}/bulan</option>)}</select>{availableRooms.length===0&&<small className="fieldHint">Tidak ada kamar tersedia pada tanggal tersebut.</small>}</label>
+      <label>Nama lengkap<input required value={onboardForm.name||''} onChange={e=>changeOnboard('name',e.target.value)} /></label>
+      <label>NIK<input required maxLength={16} value={onboardForm.nik||''} onChange={e=>changeOnboard('nik',e.target.value)} /></label>
+      <label>Jenis kelamin<select required value={onboardForm.gender||'Laki-Laki'} onChange={e=>changeOnboard('gender',e.target.value)}><option>Laki-Laki</option><option>Perempuan</option></select></label>
+      <label>Nomor telepon<input required value={onboardForm.phoneNumber||''} onChange={e=>changeOnboard('phoneNumber',e.target.value)} /></label>
+      <label>Alamat<input required value={onboardForm.address||''} onChange={e=>changeOnboard('address',e.target.value)} /></label>
+      <label>Username penyewa<input required value={onboardForm.username||''} onChange={e=>changeOnboard('username',e.target.value)} /><small className="fieldHint">Username ini diberikan kepada penyewa untuk login.</small></label>
+      <label>Password penyewa<input required minLength={8} type="password" value={onboardForm.password||''} onChange={e=>changeOnboard('password',e.target.value)} /><small className="fieldHint">Minimal 8 karakter. Simpan dan berikan kepada penyewa.</small></label>
+      <div className="actions"><button type="submit" disabled={!availableRooms.length}>Simpan penyewa & buat tagihan</button></div>
+    </form>
+  </section> : null}
   <section className="card"><div className="sectionTitle"><div><small>{resource==='users'?'MANAJEMEN AKUN':'MANAGEMENT'}</small><h2>{editing?'Edit data':resource==='users'?'Buat akun pengguna':'Tambah data'}</h2><p className="sectionHint">{editing?'Perbarui informasi yang diperlukan lalu simpan perubahan.':resource==='rooms'?'Isi data kamar untuk menambah unit kos yang dapat dikelola.':resource==='renters'?'Masukkan data penyewa sesuai identitas yang diberikan.':resource==='lodgings'?'Pilih penyewa dan kamar untuk mencatat masa tinggal.':resource==='bills'?'Pilih penginapan lalu masukkan biaya yang perlu dibayar.':resource==='payments'?'Gunakan halaman ini untuk memeriksa dan memverifikasi pembayaran.':resource==='invoices'?'Hubungkan invoice dengan tagihan yang sudah dibuat.':'Isi data akun sesuai peran pengguna.'}</p></div>{editing&&<button type="button" className="ghost" onClick={reset}>Batal</button>}</div>
    <form className="grid" onSubmit={save}>
     {info.fields.map(([k,l,t])=><label key={k}>{l}{t==='role'?<select required value={form[k]||'STAFF'} onChange={e=>change('role',e.target.value)}><option value="STAFF">Karyawan</option><option value="TENANT">Penyewa</option><option value="ADMIN">Administrator</option></select>:['renter','room','lodging','bill','invoice'].includes(t)?
