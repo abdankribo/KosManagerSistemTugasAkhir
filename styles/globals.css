@@ -53,3 +53,12 @@
 .staffRoomCard>small{display:block;font-size:8px;color:#718992;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:1050px){.staffRoomGrid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:650px){.staffRoomHead{display:block}.staffRoomHead label{margin-top:12px}.staffRoomSummary{grid-template-columns:1fr 1fr}.staffRoomGrid{grid-template-columns:repeat(2,1fr)}}
+
+.staffRoomPage .sectionTitle{margin-bottom:14px}
+.roomAvailabilityToolbar{display:flex;justify-content:space-between;align-items:end;gap:15px;padding:13px 15px;background:#f5fafb;border:1px solid #e2ecef;border-radius:12px;margin-bottom:14px}
+.roomAvailabilityToolbar label{font-size:9px;font-weight:800;color:#52707a}
+.roomAvailabilityToolbar input{display:block;margin-top:5px;padding:9px 10px;border:1px solid #d7e5e8;border-radius:9px;background:#fff;color:#17384a;font:inherit}
+.roomAvailabilityToolbar>div{display:flex;align-items:baseline;gap:7px}
+.roomAvailabilityToolbar>div strong{font-size:22px;color:#087f76}
+.roomAvailabilityToolbar>div span{font-size:9px;color:#718992}
+@media(max-width:600px){.roomAvailabilityToolbar{display:block}.roomAvailabilityToolbar>div{margin-top:10px}}

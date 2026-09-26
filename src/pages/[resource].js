@@ -58,6 +58,7 @@ export default function Resource(){
  useEffect(()=>{fetch('/api/auth/me').then(async r=>{if(!r.ok){router.replace('/login');return;}const body=await r.json();setUser(body.user);});},[router]);
  useEffect(()=>{load();loadRefs();if(resource==='renters'&&!user?.owner)loadAvailableRooms(onboardForm.startAt);},[resource,query,user?.owner]);
  async function loadAvailableRooms(date){const x=await fetch('/api/rooms/available?date='+encodeURIComponent(date||new Date().toISOString().slice(0,10)));if(x.ok)setAvailableRooms(await x.json());}
+ const roomIsAvailable=(id)=>availableRooms.some(x=>x.id===id);
  function changeOnboard(k,v){setOnboardForm(f=>({...f,[k]:v}));if(k==='startAt')loadAvailableRooms(v);}
  async function onboard(e){e.preventDefault();setError('');setOnboardResult(null);const x=await fetch('/api/tenant/onboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(onboardForm)});const body=await x.json().catch(()=>({}));if(!x.ok){setError(body.error||'Gagal menerima penyewa');return;}setOnboardResult(body);setOnboardForm({startAt:new Date().toISOString().slice(0,10),gender:'Laki-Laki'});await load();await loadAvailableRooms(new Date().toISOString().slice(0,10));}
  const refMaps=useMemo(()=>({renter:refs.renterMap||{}}),[refs]);
@@ -142,18 +143,24 @@ export default function Resource(){
       <div className="actions"><button type="submit" disabled={!availableRooms.length}>Simpan penyewa & buat tagihan</button></div>
     </form>
   </section> : null}
-  <section className="card"><div className="sectionTitle"><div><small>{resource==='users'?'MANAJEMEN AKUN':'MANAGEMENT'}</small><h2>{editing?'Edit data':resource==='users'?'Buat akun pengguna':'Tambah data'}</h2><p className="sectionHint">{editing?'Perbarui informasi yang diperlukan lalu simpan perubahan.':resource==='rooms'?'Isi data kamar untuk menambah unit kos yang dapat dikelola.':resource==='renters'?'Masukkan data penyewa sesuai identitas yang diberikan.':resource==='lodgings'?'Pilih penyewa dan kamar untuk mencatat masa tinggal.':resource==='bills'?'Pilih penginapan lalu masukkan biaya yang perlu dibayar.':resource==='payments'?'Gunakan halaman ini untuk memeriksa dan memverifikasi pembayaran.':resource==='invoices'?'Hubungkan invoice dengan tagihan yang sudah dibuat.':'Isi data akun sesuai peran pengguna.'}</p></div>{editing&&<button type="button" className="ghost" onClick={reset}>Batal</button>}</div>
-   <form className="grid" onSubmit={save}>
-    {info.fields.map(([k,l,t])=><label key={k}>{l}{t==='role'?<select required value={form[k]||'STAFF'} onChange={e=>change('role',e.target.value)}><option value="STAFF">Karyawan</option><option value="TENANT">Penyewa</option><option value="ADMIN">Administrator</option></select>:['renter','room','lodging','bill','invoice'].includes(t)?
-      <select required value={form[k]??''} onChange={e=>change(k,e.target.value)}><option value="">Pilih {l.toLowerCase()}</option>{(refs[t]||[]).map(x=><option key={x.id} value={x.id}>{optionLabel(t,x)}</option>)}</select>
-      :<input required={!['password','endAt'].includes(k)} type={t} value={form[k]??''} onChange={e=>change(k,e.target.value)}/>}</label>)}
-    {resource==='users'&&form.role==='TENANT'&&<label>Data penyewa<select required value={form.renterId??''} onChange={e=>change('renterId',e.target.value)}><option value="">Pilih penyewa yang terhubung</option>{(refs.renter||[]).map(x=><option key={x.id} value={x.id}>{x.name} · {x.phoneNumber}</option>)}</select><small className="fieldHint">Pengelola memberikan Username dan Password ini kepada penyewa. Penyewa hanya dapat mengakses portal miliknya.</small></label>}
-    {resource==='renters'&&<label>Jenis kelamin<select required value={form.gender||''} onChange={e=>change('gender',e.target.value)}><option value="">Pilih</option><option>Laki-Laki</option><option>Perempuan</option></select></label>}
-    {resource==='rooms'&&<fieldset><legend>Fasilitas</legend><div className="checks">{['AC','Bed','Bathroom','Furniture'].map(v=><label className="check" key={v}><input type="checkbox" checked={(form.facilitiesList||[]).includes(v)} onChange={e=>change('facilitiesList',e.target.checked?[...(form.facilitiesList||[]),v]:(form.facilitiesList||[]).filter(x=>x!==v))}/>{v}</label>)}</div></fieldset>}
-    {resource==='bills'&&<label>Per bulan<select value={String(form.perMonth??false)} onChange={e=>change('perMonth',e.target.value==='true')}><option value="true">Ya</option><option value="false">Tidak</option></select></label>}
-    <div className="actions"><button type="submit">{editing?'Simpan perubahan':'Simpan'}</button>{editing&&<button type="button" className="ghost" onClick={reset}>Batal</button>}</div>
-   </form>
-  </section>
+  {resource==='rooms'&&!user.owner ? <section className="card staffRoomPage">
+    <div className="sectionTitle"><div><small>INFORMASI KAMAR</small><h2>Kamar kosong & terisi</h2><p className="sectionHint">Karyawan hanya melihat ketersediaan kamar. Penambahan, perubahan harga, ukuran, dan fasilitas kamar dilakukan oleh Administrator.</p></div></div>
+    <div className="roomAvailabilityToolbar">
+      <label>Tanggal pengecekan<input type="date" value={onboardForm.startAt||''} onChange={e=>{setOnboardForm(f=>({...f,startAt:e.target.value}));loadAvailableRooms(e.target.value)}}/></label>
+      <div><strong>{availableRooms.length}</strong><span>kamar tersedia</span></div>
+    </div>
+    <div className="staffRoomGrid">
+      {items.map(room=>{
+        const available=roomIsAvailable(room.id);
+        return <article className={'staffRoomCard '+(available?'isAvailable':'isOccupied')} key={room.id}>
+          <div className="staffRoomCardTop"><strong>Kamar {room.number}</strong><span>{available?'KOSONG':'TERISI'}</span></div>
+          <b>Rp {Number(room.costPerMonth||0).toLocaleString('id-ID')}<small>/bulan</small></b>
+          <small>{room.length||0} × {room.width||0} m · {room.facilities||'Tanpa fasilitas'}</small>
+        </article>;
+      })}
+    </div>
+    {!items.length&&<div className="empty">Belum ada kamar. Hubungi Administrator untuk menambahkan kamar.</div>}
+  </section> : null}
   <section className="card"><div className="sectionTitle"><div><small>DATA TERSIMPAN</small><h2>Daftar {info.title.toLowerCase()}</h2><p className="sectionHint">{resource==='rooms'?'Gunakan daftar ini untuk melihat kamar dan harga sewanya.':resource==='renters'?'Data ini menjadi dasar saat menempatkan penyewa ke kamar.':resource==='lodgings'?'Data ini menunjukkan siapa yang menempati kamar dan periode tinggalnya.':resource==='bills'?'Tagihan yang tersimpan dapat digunakan untuk proses invoice dan pembayaran.':resource==='payments'?'Pembayaran berstatus Menunggu verifikasi perlu diperiksa bukti transaksinya.':resource==='invoices'?'Invoice menghubungkan tagihan dengan proses pembayaran.':'Gunakan daftar ini untuk memantau akun yang tersedia.'}</p></div><span className="muted">{items.length} data</span></div>
    {loading?<p className="muted">Memuat data...</p>:items.length===0?<p className="empty">Belum ada data.</p>:<div className="list">{items.map(x=><article className="row" key={x.id}>
     <div className="rowMain"><b>{itemLabel(resource,x,refMaps)}</b><div className="muted">{resource==='lodgings'&&x.startAt?new Date(x.startAt).toLocaleDateString('id-ID')+' — '+(x.endAt?new Date(x.endAt).toLocaleDateString('id-ID'):'berjalan'):resource==='payments'&&x.paymentDate?'Tanggal bayar: '+new Date(x.paymentDate).toLocaleDateString('id-ID'):''}</div>
