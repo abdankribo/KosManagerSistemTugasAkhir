@@ -31,7 +31,7 @@ function itemLabel(resource,x,refs){
 
 export default function Resource(){
  const router=useRouter(),resource=router.query.resource,info=meta[resource];
- const [items,setItems]=useState([]),[refs,setRefs]=useState({}),[form,setForm]=useState({}),[editing,setEditing]=useState(null),[error,setError]=useState(''),[query,setQuery]=useState(''),[loading,setLoading]=useState(true);
+ const [items,setItems]=useState([]),[refs,setRefs]=useState({}),[form,setForm]=useState({}),[editing,setEditing]=useState(null),[error,setError]=useState(''),[query,setQuery]=useState(''),[loading,setLoading]=useState(true),[user,setUser]=useState(null);
 
  async function load(){
   if(!info)return;
@@ -50,6 +50,7 @@ export default function Resource(){
   next.renterMap=Object.fromEntries((next.renter||[]).map(x=>[x.id,x.name]));
   setRefs(next);
  }
+ useEffect(()=>{fetch('/api/auth/me').then(async r=>{if(!r.ok){router.replace('/login');return;}setUser((await r.json()).user);});},[router]);
  useEffect(()=>{load();loadRefs();},[resource,query]);
  const refMaps=useMemo(()=>({renter:refs.renterMap||{}}),[refs]);
  function change(k,v){setForm(f=>({...f,[k]:v}));}
@@ -74,9 +75,10 @@ export default function Resource(){
   const x=await fetch('/api/'+resource+'/'+id,{method:'DELETE'});
   if(!x.ok)setError((await x.json()).error||'Gagal menghapus');else{await load();await loadRefs();}
  }
- if(!info)return <main className="center">Memuat...</main>;
+ if(!info||!user)return <main className="center">Memuat...</main>;
+ if(resource==='users'&&!user.owner)return <main className="center"><div><h2>Akses ditolak</h2><p>Halaman Users hanya tersedia untuk Administrator.</p><a href="/dashboard">Kembali ke dashboard</a></div></main>;
  return <main className="app">
-  <header className="topbar"><div><a className="brand" href="/dashboard">KOS MANAGER</a><div className="muted">{resource==='users'?'Panel administrator':'Panel manajemen'}</div></div><nav>{resource==='users'&&<a className="activeNav" href="/users">Users</a>}{nav.map(([h,t])=><a className={resource===h?'activeNav':''} href={'/'+h} key={h}>{t}</a>)}</nav><a href="/dashboard">Dashboard</a></header>
+  <header className="topbar"><div><a className="brand" href="/dashboard">KOS MANAGER</a><div className="muted">{user.owner?'Administrator':'User'} · {resource==='users'?'Panel administrator':'Panel manajemen'}</div></div><nav>{user.owner&&<a className={resource==='users'?'activeNav':''} href="/users">Users</a>}{nav.map(([h,t])=><a className={resource===h?'activeNav':''} href={'/'+h} key={h}>{t}</a>)}</nav><a href="/dashboard">Dashboard</a></header>
   <section className="pageHead"><div><small>MANAGEMENT</small><h1>{info.title}</h1><p>Tambah, ubah, cari, dan hapus data {info.title.toLowerCase()}.</p></div><input className="search" placeholder="Cari data..." value={query} onChange={e=>setQuery(e.target.value)}/></section>
   {error&&<div className="error">{error}</div>}
   <section className="card"><div className="sectionTitle"><h2>{editing?'Edit data':'Tambah data'}</h2>{editing&&<button type="button" className="ghost" onClick={reset}>Batal</button>}</div>
@@ -90,6 +92,6 @@ export default function Resource(){
     <div className="actions"><button type="submit">{editing?'Simpan perubahan':'Simpan'}</button>{editing&&<button type="button" className="ghost" onClick={reset}>Batal</button>}</div>
    </form>
   </section>
-  <section className="card"><div className="sectionTitle"><h2>Data tersimpan</h2><span className="muted">{items.length} data</span></div>{loading?<p className="muted">Memuat data...</p>:items.length===0?<p className="empty">Belum ada data.</p>:<div className="list">{items.map(x=><article className="row" key={x.id}><div><b>{itemLabel(resource,x,refMaps)}</b><div className="muted">{resource==='lodgings'&&x.startAt?new Date(x.startAt).toLocaleDateString('id-ID')+' — '+(x.endAt?new Date(x.endAt).toLocaleDateString('id-ID'):'berjalan'):''}</div></div><div className="rowActions"><button className="ghost" onClick={()=>edit(x)}>Edit</button><button className="danger" onClick={()=>remove(x.id)}>Hapus</button></div></article>)}</div>}</section>
+  <section className="card"><div className="sectionTitle"><h2>Data tersimpan</h2><span className="muted">{items.length} data</span></div>{loading?<p className="muted">Memuat data...</p>:items.length===0?<p className="empty">Belum ada data.</p>:<div className="list">{items.map(x=><article className="row" key={x.id}><div><b>{itemLabel(resource,x,refMaps)}</b><div className="muted">{resource==='lodgings'&&x.startAt?new Date(x.startAt).toLocaleDateString('id-ID')+' — '+(x.endAt?new Date(x.endAt).toLocaleDateString('id-ID'):'berjalan'):''}</div></div><div className="rowActions"><button className="ghost" onClick={()=>edit(x)}>Edit</button>{user.owner&&<button className="danger" onClick={()=>remove(x.id)}>Hapus</button>}</div></article>)}</div>}</section>
  </main>;
 }
