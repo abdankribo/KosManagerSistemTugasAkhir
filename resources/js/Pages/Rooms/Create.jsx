@@ -5,7 +5,8 @@ import { InertiaLink, usePage } from '@inertiajs/inertia-react';
 import Layout from '@/Shared/Layout';
 import LoadingButton from '@/Shared/LoadingButton';
 import TextInput from '@/Shared/TextInput';
-import SelectInput from '@/Shared/SelectInput';
+
+const FACILITIES = ['AC', 'Bed', 'Bathroom', 'Furniture'];
 
 export default () => {
   const { errors } = usePage();
@@ -28,6 +29,17 @@ export default () => {
     }));
   }
 
+  function toggleFacility(facility) {
+    setValues(values => {
+      const selected = values.facilities ? values.facilities.split(',') : [];
+      const next = selected.includes(facility)
+        ? selected.filter(item => item !== facility)
+        : [...selected, facility];
+
+      return { ...values, facilities: next.join(',') };
+    });
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
     setSending(true);
@@ -35,6 +47,8 @@ export default () => {
       setSending(false);
     });
   }
+
+  const selectedFacilities = values.facilities ? values.facilities.split(',') : [];
 
   return (
     <Layout>
@@ -45,7 +59,6 @@ export default () => {
             href={route('rooms.index')}
             className="text-indigo-600 hover:text-indigo-700"
           >
-
             Kamar
           </InertiaLink>
           <span className="font-medium text-indigo-600"> /</span> Buat
@@ -53,57 +66,25 @@ export default () => {
         <div className="max-w-3xl overflow-hidden bg-white rounded shadow">
           <form onSubmit={handleSubmit}>
             <div className="flex flex-wrap p-8 -mb-8 -mr-6">
-              <TextInput
-                className="w-full pb-8 pr-6 lg:w-1/2"
-                label="Nomor Kamar"
-                name="number"
-                errors={errors.number}
-                value={values.number}
-                onChange={handleChange}
-              />
-              <TextInput
-                className="w-full pb-8 pr-6 lg:w-1/2"
-                label="Panjang Kamar"
-                name="length"
-                type="number"
-                errors={errors.length}
-                value={values.length}
-                onChange={handleChange}
-              />
-              <TextInput
-                className="w-full pb-8 pr-6 lg:w-1/2"
-                label="Lebar Kamar"
-                name="width"
-                type="number"
-                errors={errors.width}
-                value={values.width}
-                onChange={handleChange}
-              />
-              <TextInput
-                className="w-full pb-8 pr-6 lg:w-1/2"
-                label="Fasilitas"
-                name="facilities"
-                type="text"
-                errors={errors.facilities}
-                value={values.facilities}
-                onChange={handleChange}
-              />
-              <TextInput
-                className="w-full pb-8 pr-6 lg:w-1/2"
-                label="Biaya per bulan"
-                name="cost_per_month"
-                type="text"
-                errors={errors.cost_per_month}
-                value={values.cost_per_month}
-                onChange={handleChange}
-              />
+              <TextInput className="w-full pb-8 pr-6 lg:w-1/2" label="Nomor Kamar" name="number" errors={errors.number} value={values.number} onChange={handleChange} />
+              <TextInput className="w-full pb-8 pr-6 lg:w-1/2" label="Panjang Kamar" name="length" type="number" errors={errors.length} value={values.length} onChange={handleChange} />
+              <TextInput className="w-full pb-8 pr-6 lg:w-1/2" label="Lebar Kamar" name="width" type="number" errors={errors.width} value={values.width} onChange={handleChange} />
+              <div className="w-full pb-8 pr-6 lg:w-1/2">
+                <label className="form-label">Fasilitas:</label>
+                <div className="space-y-2">
+                  {FACILITIES.map(facility => (
+                    <label key={facility} className="flex items-center">
+                      <input type="checkbox" checked={selectedFacilities.includes(facility)} onChange={() => toggleFacility(facility)} className="mr-2" />
+                      {facility}
+                    </label>
+                  ))}
+                </div>
+                {errors.facilities && <div className="form-error">{errors.facilities[0]}</div>}
+              </div>
+              <TextInput className="w-full pb-8 pr-6 lg:w-1/2" label="Biaya per bulan" name="cost_per_month" type="number" min="0" errors={errors.cost_per_month} value={values.cost_per_month} onChange={handleChange} />
             </div>
             <div className="flex items-center justify-end px-8 py-4 bg-gray-100 border-t border-gray-200">
-              <LoadingButton
-                loading={sending}
-                type="submit"
-                className="btn-indigo"
-              >
+              <LoadingButton loading={sending} type="submit" className="btn-indigo">
                 Tambah Kamar
               </LoadingButton>
             </div>
