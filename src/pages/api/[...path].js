@@ -55,7 +55,11 @@ async function overlap(roomId,startAt,endAt,exceptId){
 export default async function handler(req,res){
   const parts=req.query.path||[],resource=parts[0],id=parts[1]?Number(parts[1]):null;
   if(!cfg[resource]) return res.status(404).json({error:'Resource tidak ditemukan'});
-  if(!(await getSession(req))) return res.status(401).json({error:'Unauthorized'});
+  const sessionUserId=await getSession(req);
+  if(!sessionUserId) return res.status(401).json({error:'Unauthorized'});
+  const sessionUser=await db.user.findFirst({where:{id:sessionUserId,deletedAt:null},select:{id:true,owner:true}});
+  if(!sessionUser) return res.status(401).json({error:'Unauthorized'});
+  if(resource==='users'&&!sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
   const model=db[cfg[resource].model];
   try{
     if(req.method==='GET'){
