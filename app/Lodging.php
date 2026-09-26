@@ -2,9 +2,9 @@
 
 namespace App;
 
-use CarbonCarbon;
-use IlluminateDatabaseEloquentSoftDeletes;
-use StaudenmeirEloquentHasManyDeepHasRelationships;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 class Lodging extends Model
 {
