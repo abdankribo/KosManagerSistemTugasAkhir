@@ -10,7 +10,7 @@ class Lodging extends Model
 {
     use SoftDeletes;
     use HasRelationships;
-    
+
     protected $dates = ['start_at', 'end_at'];
 
     public function renter()
@@ -40,15 +40,21 @@ class Lodging extends Model
 
     public function getStatus()
     {
-        $now = Carbon::now();
-        if ($this->start_at->lessThan($now) && $this->end_at->greaterThan($now)) {
-            return 'Aktif';
-        } elseif ($this->start_at->greaterThan($now)) {
-            return 'Belum berjalan';
-        } else {
-            return 'Selesai';
+        if (!$this->start_at || !$this->end_at) {
+            return 'Belum lengkap';
         }
-        
+
+        $now = Carbon::now();
+
+        if ($this->start_at->lessThanOrEqualTo($now) && $this->end_at->greaterThanOrEqualTo($now)) {
+            return 'Aktif';
+        }
+
+        if ($this->start_at->greaterThan($now)) {
+            return 'Belum berjalan';
+        }
+
+        return 'Selesai';
     }
 
     public function scopeFilter($query, array $filters)
@@ -56,8 +62,7 @@ class Lodging extends Model
         $query->when($filters['search'] ?? null, function ($query, $search) {
             $query->whereHas('room', function ($query) use ($search) {
                 $query->where('number', 'like', "$search%");
-            });
-            $query->orWhereHas('renter', function ($query) use ($search) {
+            })->orWhereHas('renter', function ($query) use ($search) {
                 $query->where('name', 'like', "$search%");
             });
         })->when($filters['trashed'] ?? null, function ($query, $trashed) {
@@ -72,6 +77,10 @@ class Lodging extends Model
     public function scopeActive($query)
     {
         $now = Carbon::now();
-        $query->whereDate('start_at', '<', $now)->whereDate('end_at', '>', $now);
+
+        $query->whereNotNull('start_at')
+            ->whereNotNull('end_at')
+            ->where('start_at', '<=', $now)
+            ->where('end_at', '>=', $now);
     }
 }

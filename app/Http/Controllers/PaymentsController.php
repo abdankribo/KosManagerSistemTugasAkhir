@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Invoice;
 use Inertia\Inertia;
 use App\Payment;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Redirect;
 
@@ -41,13 +40,7 @@ class PaymentsController extends Controller
 
     public function store()
     {
-        Payment::create(
-            Request::validate([
-                'description' => ['required'],
-                'amount' => ['required', 'numeric'],
-                'invoice_id' => ['required', 'exists:invoices,id'],
-            ])
-        );
+        Payment::create(Request::validate($this->validationRules()));
 
         return Redirect::route('payments.index')->with('success', 'Data Pembayaran berhasil ditambahkan.');
     }
@@ -62,7 +55,7 @@ class PaymentsController extends Controller
                 'invoice_id' => $payment->invoice_id,
                 'invoice' => $payment->invoice,
                 'created_at' => $payment->created_at->format('Y-m-d'),
-                'deleted_at' => $payment->deleted_at
+                'deleted_at' => $payment->deleted_at,
             ],
             'invoices' => Invoice::all()->transform(function ($invoice) {
                 return [
@@ -75,13 +68,7 @@ class PaymentsController extends Controller
 
     public function update(Payment $payment)
     {
-        $payment->update(
-            Request::validate([
-                'description' => ['required'],
-                'amount' => ['required', 'numeric'],
-                'invoice_id' => ['required', 'exists:invoices,id'],
-            ])
-        );
+        $payment->update(Request::validate($this->validationRules()));
 
         return Redirect::back()->with('success', 'Data Pembayaran berhasil diperbarui.');
     }
@@ -98,5 +85,14 @@ class PaymentsController extends Controller
         $payment->restore();
 
         return Redirect::back()->with('success', 'Data Pembayaran berhasil dipulihkan.');
+    }
+
+    private function validationRules()
+    {
+        return [
+            'description' => ['required', 'string'],
+            'amount' => ['required', 'numeric', 'min:1'],
+            'invoice_id' => ['required', 'exists:invoices,id'],
+        ];
     }
 }

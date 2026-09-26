@@ -5,10 +5,8 @@ namespace App\Http\Controllers;
 use Inertia\Inertia;
 use App\Invoice;
 use App\Bill;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Redirect;
-use SebastianBergmann\Environment\Console;
 
 class InvoicesController extends Controller
 {
@@ -27,18 +25,16 @@ class InvoicesController extends Controller
                         'bill' => $invoice->bill,
                         'deleted_at' => $invoice->deleted_at,
                         'created_at' => $invoice->created_at->format('d F Y'),
-                        'paid' => $invoice->isPaid()
+                        'paid' => $invoice->isPaid(),
                     ];
                 }),
-
-            // ->only('id', 'room_id', 'renter_id', 'start_at', 'end_at', 'deleted_at')
         ]);
     }
 
     public function create()
     {
         return Inertia::render('Invoices/Create', [
-            'bills' => Bill::all()
+            'bills' => Bill::all(),
         ]);
     }
 
@@ -59,10 +55,10 @@ class InvoicesController extends Controller
             'invoice' => [
                 'id' => $invoice->id,
                 'bill_id' => $invoice->bill_id,
+                'bill' => $invoice->bill,
                 'deleted_at' => $invoice->deleted_at,
             ],
             'bills' => Bill::all(),
-
         ]);
     }
 
@@ -70,7 +66,7 @@ class InvoicesController extends Controller
     {
         $invoice->update(
             Request::validate([
-                'bill_id' => ['required', 'exists:bills,id']
+                'bill_id' => ['required', 'exists:bills,id'],
             ])
         );
 

@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use Inertia\Inertia;
 use App\Renter;
-use App\Lodging;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Redirect;
 
@@ -29,15 +27,7 @@ class RentersController extends Controller
 
     public function store()
     {
-        Renter::create(
-            Request::validate([
-                'nik' => ['required', 'numeric'],
-                'name' => ['required', 'string'],
-                'gender' => ['required', 'in:Laki-Laki,Perempuan'],
-                'phone_number' => ['required', 'numeric'],
-                'address' => ['required'],
-            ])
-        );
+        Renter::create(Request::validate($this->validationRules()));
 
         return Redirect::route('renters.index')->with('success', 'Penyewa berhasil ditambahkan.');
     }
@@ -57,8 +47,8 @@ class RentersController extends Controller
                     return [
                         'id' => $lodging->id,
                         'room' => $lodging->room,
-                        'start_at' => $lodging->start_at->format('d F Y'),
-                        'end_at' => $lodging->end_at->format('d F Y'),
+                        'start_at' => $lodging->start_at ? $lodging->start_at->format('d F Y') : '-',
+                        'end_at' => $lodging->end_at ? $lodging->end_at->format('d F Y') : '-',
                         'deleted_at' => $lodging->deleted_at,
                     ];
                 }),
@@ -68,15 +58,7 @@ class RentersController extends Controller
 
     public function update(Renter $renter)
     {
-        $renter->update(
-            Request::validate([
-                'nik' => ['required', 'numeric'],
-                'name' => ['required', 'string'],
-                'gender' => ['required', 'in:Laki-Laki,Perempuan'],
-                'phone_number' => ['required', 'numeric'],
-                'address' => ['required'],
-            ])
-        );
+        $renter->update(Request::validate($this->validationRules()));
 
         return Redirect::back()->with('success', 'Penyewa berhasil diperbarui.');
     }
@@ -94,6 +76,15 @@ class RentersController extends Controller
 
         return Redirect::back()->with('success', 'Penyewa berhasil dipulihkan.');
     }
-    
-}
 
+    private function validationRules()
+    {
+        return [
+            'nik' => ['required', 'string', 'regex:/^\d{16}$/'],
+            'name' => ['required', 'string', 'max:255'],
+            'gender' => ['required', 'in:Laki-Laki,Perempuan'],
+            'phone_number' => ['required', 'string', 'regex:/^\d{10,15}$/'],
+            'address' => ['required', 'string'],
+        ];
+    }
+}
