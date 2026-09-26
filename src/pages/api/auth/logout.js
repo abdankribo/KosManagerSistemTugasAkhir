@@ -1,0 +1,1 @@
+export default function handler(req,res){res.setHeader('Set-Cookie','user_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');res.json({ok:true})}
