@@ -6,25 +6,5 @@ import TopHeader from '@/Shared/TopHeader';
 import BottomHeader from '@/Shared/BottomHeader';
 
 export default function Layout({ children }) {
-  return (
-    <div>
-      <Helmet titleTemplate="%s | Kos Manager" />
-      <div className="flex flex-col">
-        <div className="flex flex-col h-screen">
-          <div className="md:flex">
-            <TopHeader />
-            <BottomHeader />
-          </div>
-          <div className="flex flex-grow overflow-hidden">
-            <MainMenu className="flex-shrink-0 hidden w-56 px-4 py-4 overflow-y-auto bg-indigo-800 md:block" />
-            {/* To reset scroll region (https://inertiajs.com/pages#scroll-regions) add `scroll-region="true"` to div below */}
-            <div className="w-full px-4 py-8 overflow-hidden overflow-y-auto md:p-12">
-              <FlashMessages />
-              {children}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="km-shell min-h-screen"><Helmet titleTemplate="%s | Kos Manager" /><div className="md:flex md:min-h-screen"><TopHeader /><div className="flex flex-grow overflow-hidden"><MainMenu className="km-sidebar flex-shrink-0 hidden w-60 px-4 py-5 overflow-y-auto md:block" /><main className="w-full min-w-0 overflow-y-auto"><div className="km-topbar sticky top-0 z-30 px-4 py-3 md:px-10"><BottomHeader /></div><div className="px-4 py-7 md:px-10 md:py-10"><FlashMessages />{children}</div></main></div></div></div>;
 }
