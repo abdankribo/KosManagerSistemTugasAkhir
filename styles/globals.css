@@ -25,3 +25,31 @@
 
 /* One-step renter onboarding */
 .onboardingCard{border:1px solid #d6ebe8!important}.onboardingCard .grid{margin-top:4px}.onboardingCard .actions button:disabled{opacity:.45;cursor:not-allowed}.onboardSuccess{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px;padding:13px 15px;border:1px solid #b7e4d5;background:#f0fdf7;color:#166534;border-radius:12px;font-size:11px}.onboardSuccess strong{width:100%;font-size:13px;color:#126a4a}.onboardSuccess span{padding-right:8px}.onboardingCard .fieldHint{display:block;margin-top:5px}.onboardingCard label{min-width:0}
+
+/* Room availability for staff dashboard */
+.staffRoomAvailability{background:#fff;border:1px solid #dce8eb;border-radius:17px;padding:21px;margin:0 0 20px;box-shadow:0 8px 24px #17495c0a}
+.staffRoomHead{display:flex;justify-content:space-between;align-items:end;gap:18px}
+.staffRoomHead h2{margin:5px 0 3px;color:#123448;font-size:19px}
+.staffRoomHead p{margin:0;color:#718992;font-size:10px}
+.staffRoomHead label{font-size:9px;font-weight:800;color:#52707a;min-width:180px}
+.staffRoomHead input{display:block;width:100%;margin-top:5px;padding:9px 10px;border:1px solid #d7e5e8;border-radius:9px;background:#fbfdfe;color:#17384a;font:inherit}
+.staffRoomSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0 12px}
+.staffRoomSummary div{padding:11px 13px;border-radius:11px;background:#f5fafb;border:1px solid #e2ecef}
+.staffRoomSummary span,.staffRoomSummary strong{display:block}
+.staffRoomSummary span{font-size:9px;color:#718992}
+.staffRoomSummary strong{font-size:21px;color:#123448;margin-top:2px}
+.staffRoomGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.staffRoomCard{padding:13px;border-radius:12px;border:1px solid #dce8eb;background:#f8fbfc;color:#17384a!important;transition:.2s}
+.staffRoomCard:hover{transform:translateY(-2px);box-shadow:0 8px 18px #17495c12}
+.staffRoomCard.isAvailable{border-color:#a7ded4;background:#f0fdf9}
+.staffRoomCard.isOccupied{border-color:#f0d3cc;background:#fff8f6}
+.staffRoomCardTop{display:flex;justify-content:space-between;gap:7px;align-items:center}
+.staffRoomCardTop strong{font-size:11px}
+.staffRoomCardTop span{font-size:7px;font-weight:950;letter-spacing:.08em;padding:4px 6px;border-radius:999px;background:#dff7f3;color:#087f76}
+.staffRoomCard.isOccupied .staffRoomCardTop span{background:#fee2e2;color:#b42318}
+.staffRoomCard>b{display:block;font-size:14px;color:#087f76;margin:10px 0 4px}
+.staffRoomCard.isOccupied>b{color:#b4534a}
+.staffRoomCard>b small{font-size:8px;font-weight:600;color:#718992}
+.staffRoomCard>small{display:block;font-size:8px;color:#718992;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1050px){.staffRoomGrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){.staffRoomHead{display:block}.staffRoomHead label{margin-top:12px}.staffRoomSummary{grid-template-columns:1fr 1fr}.staffRoomGrid{grid-template-columns:repeat(2,1fr)}}
