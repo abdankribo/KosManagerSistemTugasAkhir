@@ -4,12 +4,23 @@ namespace App\Http\Controllers;
 
 use Inertia\Inertia;
 use App\Room;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Redirect;
 
 class RoomsController extends Controller
 {
+    private function validationRules($roomId = null)
+    {
+        return [
+            'number' => ['required', 'string', Rule::unique('rooms', 'number')->ignore($roomId)],
+            'length' => ['required', 'min:1', 'max:8', 'numeric'],
+            'width' => ['required', 'min:1', 'max:8', 'numeric'],
+            'facilities' => ['required', 'string', 'regex:/^(AC|Bed|Bathroom|Furniture)(,(AC|Bed|Bathroom|Furniture))*$/'],
+            'cost_per_month' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
     public function index()
     {
         return Inertia::render('Rooms/Index', [
@@ -20,17 +31,17 @@ class RoomsController extends Controller
                 ->transform(function ($room) {
                     return [
                         'id' => $room->id,
-                        'number' => $room->number, 
-                        'length' => $room->length, 
-                        'width' => $room->width, 
-                        'facilities' => $room->facilities, 
-                        'cost_per_month' => $room->cost_per_month, 
-                        'created_at' => $room->created_at, 
+                        'number' => $room->number,
+                        'length' => $room->length,
+                        'width' => $room->width,
+                        'facilities' => $room->facilities,
+                        'cost_per_month' => $room->cost_per_month,
+                        'created_at' => $room->created_at,
                         'deleted_at' => $room->deleted_at,
-                        'available' => $room->isAvailable()
+                        'available' => $room->isAvailable(),
                     ];
-                })
-            ]);
+                }),
+        ]);
     }
 
     public function create()
@@ -40,15 +51,7 @@ class RoomsController extends Controller
 
     public function store()
     {
-        Room::create(
-            Request::validate([
-                'number' => ['required', 'unique:Rooms,number'],
-                'length' => ['required', 'min:1', 'max:8', 'numeric'],
-                'width' => ['required', 'min:1', 'max:8', 'numeric'],
-                'facilities' => ['required', 'in:AC,Bed,Bathroom,Furniture'],
-                'cost_per_month' => ['required', 'numeric'],
-            ])
-        );
+        Room::create(Request::validate($this->validationRules()));
 
         return Redirect::route('rooms.index')->with('success', 'Kamar berhasil ditambahkan.');
     }
@@ -68,26 +71,18 @@ class RoomsController extends Controller
                     return [
                         'id' => $lodging->id,
                         'renter' => $lodging->renter,
-                        'start_at' => $lodging->start_at->format('d F Y'),
-                        'end_at' => $lodging->end_at->format('d F Y'),
+                        'start_at' => $lodging->start_at ? $lodging->start_at->format('d F Y') : '-',
+                        'end_at' => $lodging->end_at ? $lodging->end_at->format('d F Y') : '-',
                         'deleted_at' => $lodging->deleted_at,
                     ];
-                })
+                }),
             ],
         ]);
     }
 
     public function update(Room $room)
     {
-        $room->update(
-            Request::validate([
-                'number' => ['required', 'unique:Rooms,number'],
-                'length' => ['required', 'min:1', 'max:8', 'numeric'],
-                'width' => ['required', 'min:1', 'max:8', 'numeric'],
-                'facilities' => ['required', 'in:AC,Bed,Bathroom,Furniture'],
-                'cost_per_month' => ['required', 'numeric'],
-            ])
-        );
+        $room->update(Request::validate($this->validationRules($room->id)));
 
         return Redirect::back()->with('success', 'Kamar berhasil diperbarui.');
     }
