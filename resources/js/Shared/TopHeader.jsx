@@ -1,5 +1,0 @@
-import React,{useState} from 'react';
-import {InertiaLink} from '@inertiajs/inertia-react';
-import Logo from '@/Shared/Logo';
-import MainMenu from '@/Shared/MainMenu';
-export default()=>{const[open,setOpen]=useState(false);return <div className="km-sidebar md:flex-shrink-0 md:w-60 px-5 py-4 md:py-6 flex items-center justify-between md:block"><InertiaLink className="block mb-0 md:mb-8 px-2" href="/"><Logo className="text-white fill-current" width="128" height="30"/></InertiaLink><button type="button" aria-label="Buka menu" className="km-focus md:hidden text-white p-2 rounded-lg" onClick={()=>setOpen(true)}><svg className="w-6 h-6 fill-current" viewBox="0 0 20 20"><path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"/></svg></button><div className={open?'':'hidden'}><div className="fixed inset-0 z-40 bg-black opacity-40" onClick={()=>setOpen(false)}/><div className="fixed top-0 left-0 z-50 w-72 h-full km-sidebar px-4 py-6 shadow-2xl"><div className="flex justify-between px-2 mb-6"><b className="text-white">Menu</b><button className="text-white text-2xl" onClick={()=>setOpen(false)}>×</button></div><MainMenu className="px-0"/></div></div></div>;};
