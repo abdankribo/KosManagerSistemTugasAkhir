@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { getSession } from '../../lib/auth';
 
 const cfg = {
-  users:{model:'user',fields:['firstName','lastName','email','password','owner','photoPath','accountId']},
+  users:{model:'user',fields:['firstName','lastName','email','password','owner','role','renterId','photoPath','accountId']},
   rooms:{model:'room',fields:['number','length','width','facilities','costPerMonth']},
   renters:{model:'renter',fields:['nik','name','gender','phoneNumber','address']},
   lodgings:{model:'lodging',fields:['renterId','roomId','startAt','endAt']},
@@ -27,6 +27,7 @@ function clean(resource,body={}) {
   }
   return out;
 }
+
 function validate(resource,d){
   if(resource==='rooms'){
     if(!d.number) throw Error('Nomor kamar wajib diisi');
@@ -47,22 +48,40 @@ function validate(resource,d){
     if(!Number.isInteger(d.renterId)||!Number.isInteger(d.roomId)) throw Error('Penyewa dan kamar wajib dipilih');
     if(d.startAt&&d.endAt&&d.endAt<d.startAt) throw Error('Tanggal selesai tidak boleh sebelum tanggal mulai');
   }
+  if(resource==='users'){
+    if(!d.firstName||!d.email) throw Error('Nama depan dan email wajib diisi');
+    const role=d.role||'STAFF';
+    if(!['ADMIN','STAFF','TENANT'].includes(role)) throw Error('Peran pengguna tidak valid');
+    if(role==='TENANT'&&!Number.isInteger(d.renterId)) throw Error('Akun penyewa harus dihubungkan ke data penyewa');
+  }
 }
+
 async function overlap(roomId,startAt,endAt,exceptId){
   if(!startAt||!endAt) return false;
   return !!await db.lodging.findFirst({where:{roomId,deletedAt:null,id:exceptId?{not:exceptId}:undefined,startAt:{lte:endAt},endAt:{gte:startAt}}});
 }
+
 export default async function handler(req,res){
   const parts=req.query.path||[],resource=parts[0],id=parts[1]?Number(parts[1]):null;
   if(!cfg[resource]) return res.status(404).json({error:'Resource tidak ditemukan'});
+
   const sessionUserId=await getSession(req);
   if(!sessionUserId) return res.status(401).json({error:'Unauthorized'});
-  const sessionUser=await db.user.findFirst({where:{id:sessionUserId,deletedAt:null},select:{id:true,owner:true}});
+
+  const sessionUser=await db.user.findFirst({
+    where:{id:sessionUserId,deletedAt:null},
+    select:{id:true,owner:true,role:true,renterId:true}
+  });
   if(!sessionUser) return res.status(401).json({error:'Unauthorized'});
+
+  const role=sessionUser.owner?'ADMIN':(sessionUser.role==='TENANT'?'TENANT':'STAFF');
+  if(role==='TENANT') return res.status(403).json({error:'Akun Penyewa hanya dapat menggunakan portal pembayaran.'});
+
   const adminOnly = resource === 'users';
   const userCanWrite = ['rooms','renters','lodgings','bills','invoices','payments'].includes(resource);
-  if(adminOnly && !sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
-  if(!sessionUser.owner && !userCanWrite && req.method !== 'GET') return res.status(403).json({error:'Akun User tidak memiliki izin untuk mengubah data ini'});
+  if(adminOnly && role!=='ADMIN') return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
+  if(role!=='ADMIN' && !userCanWrite && req.method!=='GET') return res.status(403).json({error:'Akun User tidak memiliki izin untuk mengubah data ini'});
+
   const model=db[cfg[resource].model];
   try{
     if(req.method==='GET'){
@@ -78,42 +97,54 @@ export default async function handler(req,res){
       }
       return res.json(await model.findMany({where,orderBy:{id:'desc'},take:200}));
     }
+
     if(req.method==='POST'){
+      if(role!=='ADMIN' && resource==='users') return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
       const data=clean(resource,req.body);
-      if(resource==='users' && !sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
-      if(!sessionUser.owner){
-        delete data.accountId;
-        delete data.owner;
-        delete data.password;
-      }
+
       if(resource==='users'){
+        const requestedRole=data.role||'STAFF';
+        data.role=requestedRole;
+        data.owner=requestedRole==='ADMIN';
         if(!data.accountId){const account=await db.account.findFirst();if(!account)throw Error('Buat account terlebih dahulu');data.accountId=account.id;}
         if(!data.password||String(data.password).length<8) throw Error('Password minimal 8 karakter');
         data.password=await bcrypt.hash(data.password,12);
       }
+
       validate(resource,data);
       if(resource==='lodgings'&&await overlap(data.roomId,data.startAt,data.endAt)) throw Error('Periode kamar bertabrakan dengan penginapan lain');
       return res.status(201).json(await model.create({data}));
     }
+
     if(req.method==='PUT'&&id){
       const data=clean(resource,req.body);
-      if(resource==='users' && !sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
-      if(!sessionUser.owner){
+      if(resource==='users' && role!=='ADMIN') return res.status(403).json({error:'Hanya administrator yang dapat mengelola pengguna'});
+      if(resource==='users'){
+        if(data.role){
+          if(!['ADMIN','STAFF','TENANT'].includes(data.role)) throw Error('Peran pengguna tidak valid');
+          data.owner=data.role==='ADMIN';
+        }
+        if(data.password){
+          if(String(data.password).length<8) throw Error('Password minimal 8 karakter');
+          data.password=await bcrypt.hash(data.password,12);
+        }
+      }
+      if(role!=='ADMIN'){
         delete data.accountId;
         delete data.owner;
-      }
-      if(resource==='users'&&data.password){
-        if(String(data.password).length<8) throw Error('Password minimal 8 karakter');
-        data.password=await bcrypt.hash(data.password,12);
+        delete data.role;
+        delete data.renterId;
       }
       validate(resource,data);
       if(resource==='lodgings'&&await overlap(data.roomId,data.startAt,data.endAt,id)) throw Error('Periode kamar bertabrakan dengan penginapan lain');
       return res.json(await model.update({where:{id},data}));
     }
+
     if(req.method==='DELETE'&&id){
-      if(!sessionUser.owner) return res.status(403).json({error:'Hanya administrator yang dapat menghapus data'});
+      if(role!=='ADMIN') return res.status(403).json({error:'Hanya administrator yang dapat menghapus data'});
       return res.json(await model.update({where:{id},data:{deletedAt:new Date()}}));
     }
+
     return res.status(405).json({error:'Method tidak diizinkan'});
   }catch(e){return res.status(400).json({error:e?.message||'Permintaan tidak valid'});}
 }

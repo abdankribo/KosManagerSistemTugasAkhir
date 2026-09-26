@@ -32,3 +32,25 @@ Arahkan `DATABASE_URL` ke database MySQL lama setelah melakukan backup. Jangan m
 
 ## Catatan
 Build dan koneksi MySQL perlu diverifikasi pada environment yang memiliki akses dependency install dan database sebenarnya; repository ini tidak menyimpan credential database.
+
+
+## Role aplikasi
+
+KosManager sekarang memiliki tiga jenis akun:
+
+- **Admin / Pemilik Kos** — mengelola kamar, harga, pengguna, penyewa, tagihan, invoice, dan seluruh transaksi.
+- **User / Karyawan** — mengelola operasional kos dan memverifikasi bukti pembayaran penyewa.
+- **Penyewa / Tenant** — menggunakan portal sederhana untuk melihat kamar/tagihan miliknya, memilih tagihan, menentukan tanggal pembayaran, dan mengunggah foto bukti pembayaran.
+
+### Alur pembayaran
+
+1. Admin atau karyawan menyiapkan kamar, penyewa, penginapan, tagihan, dan invoice.
+2. Penyewa masuk ke Portal Penyewa.
+3. Penyewa memilih tagihan/kamar yang tersedia.
+4. Nominal pembayaran diambil otomatis dari tagihan dan tidak dapat diubah oleh penyewa.
+5. Penyewa memilih tanggal pembayaran dan mengunggah foto bukti pembayaran.
+6. Pembayaran masuk dengan status **Menunggu Verifikasi**.
+7. Admin atau karyawan memeriksa bukti pembayaran.
+8. Pembayaran dapat diterima atau ditolak. Penyewa dapat melihat statusnya dari portal.
+
+Akun tenant harus dihubungkan ke data penyewa agar tenant hanya dapat melihat tagihan dan pembayaran miliknya sendiri.
