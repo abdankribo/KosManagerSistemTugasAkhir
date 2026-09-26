@@ -1,3 +1,4 @@
+// Prisma schema for the Next.js migration.
 generator client {
   provider = "prisma-client-js"
 }
