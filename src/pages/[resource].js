@@ -102,9 +102,9 @@ export default function Resource(){
     <a className="userLogo" href="/dashboard"><span className="userLogoMark">K</span><div><strong>Kos<span>Manager</span></strong><small>Workspace Operasional</small></div></a>
     <div className="userNavLabel">MENU UTAMA</div>
     <nav className="userSideNav">
+      <a href="/dashboard"><span>⌂</span>Dashboard</a>
       <a className={resource==="rooms"?"userSideActive":""} href="/rooms"><span>▣</span>Kamar</a>
       <a className={resource==="renters"?"userSideActive":""} href="/renters"><span>♙</span>Penyewa</a>
-      <a className={resource==="lodgings"?"userSideActive":""} href="/lodgings"><span>⌂</span>Penginapan</a>
       <a className={resource==="bills"?"userSideActive":""} href="/bills"><span>▤</span>Tagihan</a>
       <a className={resource==="payments"?"userSideActive":""} href="/payments"><span>▣</span>Pembayaran</a>
     </nav>
