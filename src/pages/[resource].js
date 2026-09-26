@@ -81,6 +81,7 @@ export default function Resource(){
   const x=await fetch('/api/'+resource+'/'+id,{method:'DELETE'});
   if(!x.ok)setError((await x.json()).error||'Gagal menghapus');else{await load();await loadRefs();}
  }
+ async function logout(){await fetch('/api/auth/logout',{method:'POST'});router.replace('/login');}
  async function verifyPayment(id,action){
   const note=action==='REJECTED'?window.prompt('Alasan penolakan (opsional):')||'Bukti pembayaran ditolak.':'';
   const x=await fetch('/api/payments/'+id+'/verify',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,note})});
@@ -92,9 +93,33 @@ export default function Resource(){
  if(resource==='users'&&!user.owner)return <main className="center"><div><h2>Akses ditolak</h2><p>Halaman Users hanya tersedia untuk Administrator.</p><a href="/dashboard">Kembali ke dashboard</a></div></main>;
  if(user.role==='TENANT')return <main className="center"><div><h2>Akses dibatasi</h2><p>Gunakan portal penyewa untuk pembayaran.</p><a href="/dashboard">Kembali ke dashboard</a></div></main>;
 
- return <main className="app">
-  <header className="topbar"><div><a className="brand" href="/dashboard">KOS MANAGER</a><div className="muted">{roleLabel(user.role,user.owner)} · {resource==='users'?'Panel administrator':'Panel manajemen'}</div></div><nav>{user.owner&&<a className={resource==='users'?'activeNav':''} href="/users">Users</a>}{nav.map(([h,t])=><a className={resource===h?'activeNav':''} href={'/'+h} key={h}>{t}</a>)}</nav><a href="/dashboard">Dashboard</a></header>
-  <section className="pageHead"><div><small>MANAGEMENT</small><h1>{info.title}</h1><p>{resource==='payments'?'Periksa bukti pembayaran, lalu terima atau tolak transaksi.':'Tambah, ubah, cari, dan kelola data '+info.title.toLowerCase()+'.'}</p></div><input className="search" placeholder="Cari data..." value={query} onChange={e=>setQuery(e.target.value)}/></section>
+ return <main className={user.owner ? "app" : "userDashboard"}>
+  {user.owner ? (<header className="topbar"><div><a className="brand" href="/dashboard">KOS MANAGER</a><div className="muted">{roleLabel(user.role,user.owner)} · {resource==='users'?'Panel administrator':'Panel manajemen'}</div></div><nav>{user.owner&&<a className={resource==='users'?'activeNav':''} href="/users">Users</a>}{nav.map(([h,t])=><a className={resource===h?'activeNav':''} href={'/'+h} key={h}>{t}</a>)}</nav><a href="/dashboard">Dashboard</a></header>) : null}
+  {!user.owner && (  <aside className="userSidebar">
+    <a className="userLogo" href="/dashboard"><span className="userLogoMark">K</span><div><strong>Kos<span>Manager</span></strong><small>Workspace Operasional</small></div></a>
+    <div className="userNavLabel">MENU UTAMA</div>
+    <nav className="userSideNav">
+      <a className={resource==="rooms"?"userSideActive":""} href="/rooms"><span>▣</span>Kamar</a>
+      <a className={resource==="renters"?"userSideActive":""} href="/renters"><span>♙</span>Penyewa</a>
+      <a className={resource==="lodgings"?"userSideActive":""} href="/lodgings"><span>⌂</span>Penginapan</a>
+      <a className={resource==="bills"?"userSideActive":""} href="/bills"><span>▤</span>Tagihan</a>
+      <a className={resource==="payments"?"userSideActive":""} href="/payments"><span>▣</span>Pembayaran</a>
+    </nav>
+    <div className="userSideDivider"></div>
+    <div className="userNavLabel">AKUN</div>
+    <a className="userSideLink" href="/dashboard"><span>●</span>Profil Saya</a>
+    <button className="userSideLogout" type="button" onClick={logout}><span>↪</span>Keluar</button>
+    <div className="userDbStatus"><i></i><div><strong>Sistem siap</strong><small>Database terhubung</small></div><b>•</b></div>
+  </aside>)}
+  <div className={user.owner ? "" : "userMain"}>
+  {!user.owner && (  <header className="userHeader">
+    <label className="userSearch"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Cari data..." /></label>
+    <div className="userHeaderRight"><button className="userNotif" type="button" aria-label="Notifikasi">♢<i></i></button><div className="userAvatar">{(user.firstName||user.email||"U").charAt(0).toUpperCase()}</div><div className="userIdentity"><strong>{user.firstName||"User"}</strong><span><em></em>Karyawan</span></div></div>
+  </header>)}
+  {user.owner ? (<section className="pageHead"><div><small>MANAGEMENT</small><h1>{info.title}</h1><p>{resource==='payments'?'Periksa bukti pembayaran, lalu terima atau tolak transaksi.':'Tambah, ubah, cari, dan kelola data '+info.title.toLowerCase()+'.'}</p></div><input className="search" placeholder="Cari data..." value={query} onChange={e=>setQuery(e.target.value)}/></section>) : (  <section className="resourceUserHeading">
+    <div><span className="userEyebrow">WORKSPACE KARYAWAN · {info.title.toUpperCase()}</span><h1>{info.title}</h1><p>{resource==="payments"?"Periksa bukti pembayaran, lalu terima atau tolak transaksi.":"Kelola data "+info.title.toLowerCase()+" dengan cepat dan rapi."}</p></div>
+    <a className="resourceBackDashboard" href="/dashboard">← Dashboard</a>
+  </section>)}
   {error&&<div className="error">{error}</div>}
   {resource==='users'&&createdCredentials&&<section className="card credentialCard"><div className="sectionTitle"><div><small>AKUN BERHASIL DIBUAT</small><h2>Serahkan akses ini kepada penyewa</h2></div><button type="button" className="ghost" onClick={()=>setCreatedCredentials(null)}>Tutup</button></div><p className="credentialNote">Simpan atau berikan kredensial ini kepada penyewa. Password hanya ditampilkan sekali di halaman ini.</p><div className="credentialGrid"><div><span>Username</span><strong>{createdCredentials.username}</strong></div><div><span>Password</span><strong>{createdCredentials.password}</strong></div></div><div className="credentialTip">Akun ini sudah terhubung ke data penyewa {createdCredentials.name||'tersebut'}.</div></section>}
   <section className="card"><div className="sectionTitle"><div><small>{resource==='users'?'MANAJEMEN AKUN':'MANAGEMENT'}</small><h2>{editing?'Edit data':resource==='users'?'Buat akun pengguna':'Tambah data'}</h2></div>{editing&&<button type="button" className="ghost" onClick={reset}>Batal</button>}</div>
@@ -117,5 +142,6 @@ export default function Resource(){
     <div className="rowActions">{resource==='payments'&&x.status==='PENDING'&&<><button className="approveButton" onClick={()=>verifyPayment(x.id,'APPROVED')}>✓ Terima</button><button className="rejectButton" onClick={()=>verifyPayment(x.id,'REJECTED')}>✕ Tolak</button></>}{resource!=='payments'&&<button className="ghost" onClick={()=>edit(x)}>Edit</button>}{resource==='payments'&&user.owner&&<button className="ghost" onClick={()=>edit(x)}>Edit</button>}{user.owner&&<button className="danger" onClick={()=>remove(x.id)}>Hapus</button>}</div>
    </article>)}</div>}
   </section>
+  </div>
  </main>;
 }
