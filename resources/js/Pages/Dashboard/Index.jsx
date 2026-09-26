@@ -1,58 +1,6 @@
 import React from 'react';
 import Helmet from 'react-helmet';
-import { InertiaLink, usePage } from '@inertiajs/inertia-react';
+import {InertiaLink,usePage} from '@inertiajs/inertia-react';
 import Layout from '@/Shared/Layout';
-import { KeyOutline, UserGroupOutline, ArchiveOutline } from '@graywolfai/react-heroicons';
-
-const Dashboard = () => {
-  const { counts } = usePage()
-  return (
-    <div>
-      <Helmet>
-        <title>Dasbor</title>
-      </Helmet>
-      <h1 className="mb-8 text-3xl font-bold">Dasbor</h1>
-      <div className="flex flex-wrap -mx-3">
-        <div className="w-full px-3 mb-4 lg:w-1/2 xl:w-1/3">
-          <div className="flex w-full p-4 bg-white rounded-lg shadow">
-            <div className="flex items-center justify-center w-16 h-16 mr-4 bg-indigo-600 rounded-md">
-              <KeyOutline className="w-8 h-8 text-white" />
-            </div>
-            <div className="flex flex-col py-1">
-              <span className="mb-2 font-semibold text-gray-600">Kamar Tersedia</span>
-              <span className="text-3xl font-semibold">{counts.rooms}</span>
-            </div>
-          </div>
-        </div>
-        <div className="w-full px-3 mb-4 lg:w-1/2 xl:w-1/3">
-          <div className="flex w-full p-4 bg-white rounded-lg shadow">
-            <div className="flex items-center justify-center w-16 h-16 mr-4 bg-indigo-600 rounded-md">
-              <UserGroupOutline className="w-8 h-8 text-white" />
-            </div>
-            <div className="flex flex-col py-1">
-              <span className="mb-2 font-semibold text-gray-600">Penghuni</span>
-              <span className="text-3xl font-semibold">{counts.renters}</span>
-            </div>
-          </div>
-        </div>
-        <div className="w-full px-3 mb-4 lg:w-1/2 xl:w-1/3">
-          <div className="flex w-full p-4 bg-white rounded-lg shadow">
-            <div className="flex items-center justify-center w-16 h-16 mr-4 bg-indigo-600 rounded-md">
-              <ArchiveOutline className="w-8 h-8 text-white" />
-            </div>
-            <div className="flex flex-col py-1">
-              <span className="mb-2 font-semibold text-gray-600">Penginapan Berlangsung</span>
-              <span className="text-3xl font-semibold">{counts.lodgings}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Persisten layout
-// Docs: https://inertiajs.com/pages#persistent-layouts
-Dashboard.layout = page => <Layout children={page} />;
-
-export default Dashboard;
+import {KeyOutline,UserGroupOutline,ArchiveOutline,DatabaseOutline} from '@graywolfai/react-heroicons';
+const Dashboard=()=>{const{counts,database}=usePage();const db=database||{connected:false,driver:'unknown',name:''};const cards=[[KeyOutline,'Kamar tersedia',counts.rooms,'bg-indigo-100 text-indigo-700'],[UserGroupOutline,'Penghuni',counts.renters,'bg-emerald-100 text-emerald-700'],[ArchiveOutline,'Penginapan aktif',counts.lodgings,'bg-amber-100 text-amber-700']];return <div><Helmet><title>Dasbor</title></Helmet><section className="km-welcome p-7 md:p-9 mb-7"><div className="relative z-10 max-w-2xl"><div className="mb-2 text-sm font-semibold text-indigo-200">CONTROL CENTER</div><h1 className="text-3xl md:text-4xl font-extrabold text-white">Selamat datang di Kos Manager.</h1><p className="mt-3 text-sm md:text-base leading-relaxed text-indigo-100">Pantau kamar, penghuni, penginapan, tagihan, dan pembayaran dari satu dashboard.</p></div></section><div className="grid grid-cols-1 gap-5 mb-7 md:grid-cols-2 xl:grid-cols-3">{cards.map(([Icon,label,value,style])=><div className="km-card p-5" key={label}><div className="flex items-center"><div className={'km-stat-icon mr-4 '+style}><Icon className="w-7 h-7"/></div><div><div className="km-stat-label text-sm">{label}</div><div className="km-stat-number mt-1">{value}</div></div></div></div>)}</div><div className="grid grid-cols-1 gap-5 lg:grid-cols-3"><div className="km-card p-6 lg:col-span-2"><h2 className="text-lg font-bold text-gray-900">Akses cepat</h2><p className="mt-1 text-sm text-gray-500">Navigasi ke modul yang sering digunakan.</p><div className="grid grid-cols-1 gap-3 mt-5 sm:grid-cols-2"><InertiaLink href={route('rooms.index')} className="flex items-center p-4 rounded-2xl bg-indigo-50 text-indigo-900 hover:bg-indigo-100"><KeyOutline className="w-6 h-6 mr-3 text-indigo-700"/>Kelola Kamar</InertiaLink><InertiaLink href={route('renters.index')} className="flex items-center p-4 rounded-2xl bg-emerald-50 text-emerald-900 hover:bg-emerald-100"><UserGroupOutline className="w-6 h-6 mr-3 text-emerald-700"/>Kelola Penyewa</InertiaLink><InertiaLink href={route('lodgings.index')} className="flex items-center p-4 rounded-2xl bg-amber-50 text-amber-900 hover:bg-amber-100"><ArchiveOutline className="w-6 h-6 mr-3 text-amber-700"/>Kelola Penginapan</InertiaLink><InertiaLink href={route('payments.index')} className="flex items-center p-4 rounded-2xl bg-sky-50 text-sky-900 hover:bg-sky-100"><DatabaseOutline className="w-6 h-6 mr-3 text-sky-700"/>Kelola Pembayaran</InertiaLink></div></div><div className="km-card p-6"><div className="flex items-center justify-between"><div><h2 className="text-lg font-bold text-gray-900">Database</h2><p className="mt-1 text-sm text-gray-500">Status koneksi aplikasi.</p></div><DatabaseOutline className="w-7 h-7 text-indigo-600"/></div><div className="mt-7"><span className={db.connected?'km-status km-status-ok':'km-status km-status-bad'}><span className="km-status-dot"/>{db.connected?'Terhubung':'Tidak terhubung'}</span><div className="mt-4 text-sm text-gray-600">Driver: <strong className="text-gray-900">{db.driver}</strong></div><div className="mt-1 text-sm text-gray-600">Database: <strong className="text-gray-900">{db.name||'-'}</strong></div></div></div></div></div>};Dashboard.layout=page=><Layout children={page}/>;export default Dashboard;
