@@ -36,7 +36,7 @@ function itemLabel(resource,x,refs){
 
 export default function Resource(){
  const router=useRouter(),resource=router.query.resource,info=meta[resource];
- const [items,setItems]=useState([]),[refs,setRefs]=useState({}),[form,setForm]=useState({}),[editing,setEditing]=useState(null),[error,setError]=useState(''),[query,setQuery]=useState(''),[loading,setLoading]=useState(true),[user,setUser]=useState(null),[createdCredentials,setCreatedCredentials]=useState(null),[availableRooms,setAvailableRooms]=useState([]),[onboardForm,setOnboardForm]=useState({startAt:new Date().toISOString().slice(0,10),gender:'Laki-Laki'}),[onboardResult,setOnboardResult]=useState(null);
+ const [items,setItems]=useState([]),[refs,setRefs]=useState({}),[form,setForm]=useState({}),[editing,setEditing]=useState(null),[error,setError]=useState(''),[query,setQuery]=useState(''),[loading,setLoading]=useState(true),[user,setUser]=useState(null),[createdCredentials,setCreatedCredentials]=useState(null),[availableRooms,setAvailableRooms]=useState([]),[onboardForm,setOnboardForm]=useState({startAt:new Date().toISOString().slice(0,10),gender:'Laki-Laki'}),[onboardResult,setOnboardResult]=useState(null),[selectedProof,setSelectedProof]=useState(null);
 
  async function load(){
   if(!info)return;
@@ -164,11 +164,18 @@ export default function Resource(){
   <section className="card"><div className="sectionTitle"><div><small>DATA TERSIMPAN</small><h2>Daftar {info.title.toLowerCase()}</h2><p className="sectionHint">{resource==='rooms'?'Gunakan daftar ini untuk melihat kamar dan harga sewanya.':resource==='renters'?'Data ini menjadi dasar saat menempatkan penyewa ke kamar.':resource==='lodgings'?'Data ini menunjukkan siapa yang menempati kamar dan periode tinggalnya.':resource==='bills'?'Tagihan yang tersimpan dapat digunakan untuk proses invoice dan pembayaran.':resource==='payments'?'Pembayaran berstatus Menunggu verifikasi perlu diperiksa bukti transaksinya.':resource==='invoices'?'Invoice menghubungkan tagihan dengan proses pembayaran.':'Gunakan daftar ini untuk memantau akun yang tersedia.'}</p></div><span className="muted">{items.length} data</span></div>
    {loading?<p className="muted">Memuat data...</p>:items.length===0?<p className="empty">Belum ada data.</p>:<div className="list">{items.map(x=><article className="row" key={x.id}>
     <div className="rowMain"><b>{itemLabel(resource,x,refMaps)}</b><div className="muted">{resource==='lodgings'&&x.startAt?new Date(x.startAt).toLocaleDateString('id-ID')+' — '+(x.endAt?new Date(x.endAt).toLocaleDateString('id-ID'):'berjalan'):resource==='payments'&&x.paymentDate?'Tanggal bayar: '+new Date(x.paymentDate).toLocaleDateString('id-ID'):''}</div>
-    {resource==='payments'&&x.proofData&&<button type="button" className="proofButton" onClick={()=>window.open(x.proofData,'_blank','noopener,noreferrer')}>Lihat bukti pembayaran</button>}
-    {resource==='payments'&&x.proofData&&<img className="paymentProofThumb" src={x.proofData} alt="Bukti pembayaran"/>}</div>
+    {resource==='payments'&&x.proofName&&<button type="button" className="proofButton" onClick={()=>setSelectedProof({id:x.id,name:x.proofName})}>Lihat bukti pembayaran</button>}
+    {resource==='payments'&&x.proofName&&<img className="paymentProofThumb" src={'/api/payments/'+x.id+'/proof'} alt="Bukti pembayaran" onError={e=>{e.currentTarget.style.display='none'}}/>}</div>
     <div className="rowActions">{resource==='payments'&&x.status==='PENDING'&&<><button className="approveButton" onClick={()=>verifyPayment(x.id,'APPROVED')}>✓ Terima</button><button className="rejectButton" onClick={()=>verifyPayment(x.id,'REJECTED')}>✕ Tolak</button></>}{resource!=='payments'&&<button className="ghost" onClick={()=>edit(x)}>Edit</button>}{resource==='payments'&&user.owner&&<button className="ghost" onClick={()=>edit(x)}>Edit</button>}{user.owner&&<button className="danger" onClick={()=>remove(x.id)}>Hapus</button>}</div>
    </article>)}</div>}
   </section>
   </div>
+  {selectedProof&&<div className="proofModal" role="dialog" aria-modal="true" aria-label="Bukti pembayaran">
+    <div className="proofModalBackdrop" onClick={()=>setSelectedProof(null)}></div>
+    <section className="proofModalCard">
+      <div className="proofModalHeader"><div><small>BUKTI PEMBAYARAN</small><h2>{selectedProof.name||'Bukti pembayaran'}</h2></div><button type="button" className="ghost" onClick={()=>setSelectedProof(null)}>Tutup</button></div>
+      <div className="proofModalImageWrap"><img src={'/api/payments/'+selectedProof.id+'/proof'} alt={selectedProof.name||'Bukti pembayaran'} /></div>
+    </section>
+  </div>}
  </main>;
 }
