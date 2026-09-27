@@ -28,6 +28,29 @@ function clean(resource,body={}) {
   return out;
 }
 
+async function addPaymentRenterNames(rows){
+  if(!rows.length) return rows;
+  const invoiceIds=[...new Set(rows.map(row=>row.invoiceId).filter(Number.isInteger))];
+  if(!invoiceIds.length) return rows.map(row=>({...row,renterName:null}));
+  const invoices=await db.invoice.findMany({where:{id:{in:invoiceIds},deletedAt:null},select:{id:true,billId:true}});
+  const billIds=[...new Set(invoices.map(row=>row.billId).filter(Number.isInteger))];
+  const bills=billIds.length?await db.bill.findMany({where:{id:{in:billIds},deletedAt:null},select:{id:true,lodgingId:true}}):[];
+  const lodgingIds=[...new Set(bills.map(row=>row.lodgingId).filter(Number.isInteger))];
+  const lodgings=lodgingIds.length?await db.lodging.findMany({where:{id:{in:lodgingIds},deletedAt:null},select:{id:true,renterId:true}}):[];
+  const renterIds=[...new Set(lodgings.map(row=>row.renterId).filter(Number.isInteger))];
+  const renters=renterIds.length?await db.renter.findMany({where:{id:{in:renterIds},deletedAt:null},select:{id:true,name:true}}):[];
+  const invoiceMap=new Map(invoices.map(row=>[row.id,row.billId]));
+  const billMap=new Map(bills.map(row=>[row.id,row.lodgingId]));
+  const lodgingMap=new Map(lodgings.map(row=>[row.id,row.renterId]));
+  const renterMap=new Map(renters.map(row=>[row.id,row.name]));
+  return rows.map(row=>{
+    const billId=invoiceMap.get(row.invoiceId);
+    const lodgingId=billId===undefined?undefined:billMap.get(billId);
+    const renterId=lodgingId===undefined?undefined:lodgingMap.get(lodgingId);
+    return {...row,renterName:renterId===undefined?null:(renterMap.get(renterId)||null)};
+  });
+}
+
 function validate(resource,d){
   if(resource==='rooms'){
     if(!d.number) throw Error('Nomor kamar wajib diisi');
@@ -86,9 +109,10 @@ export default async function handler(req,res){
   try{
     if(req.method==='GET'){
       if(id){
-        const item=resource==='payments'
+        let item=resource==='payments'
           ? await model.findFirst({where:{id,deletedAt:null},select:{id:true,invoiceId:true,description:true,amount:true,status:true,paymentDate:true,proofName:true,verifiedAt:true,verifiedByUserId:true,createdAt:true}})
           : await model.findFirst({where:{id,deletedAt:null}});
+        if(resource==='payments'&&item) item=(await addPaymentRenterNames([item]))[0];
         if(resource==='users' && item) delete item.password;
         return res.json(item||{});
       }
@@ -98,9 +122,10 @@ export default async function handler(req,res){
         const field=resource==='rooms'?'number':resource==='renters'?'name':resource==='bills'?'name':'description';
         where={...where,[field]:{contains:q}};
       }
-      const rows=resource==='payments'
+      let rows=resource==='payments'
         ? await model.findMany({where,orderBy:{id:'desc'},take:200,select:{id:true,invoiceId:true,description:true,amount:true,status:true,paymentDate:true,proofName:true,verifiedAt:true,verifiedByUserId:true,createdAt:true}})
         : await model.findMany({where,orderBy:resource==='rooms'?{number:'asc'}:{id:'desc'},take:200});
+      if(resource==='payments') rows=await addPaymentRenterNames(rows);
       if(resource==='users') rows.forEach(row=>delete row.password);
       return res.json(rows);
     }
