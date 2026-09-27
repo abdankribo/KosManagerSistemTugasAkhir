@@ -30,6 +30,23 @@ Arahkan `DATABASE_URL` ke database MySQL lama setelah melakukan backup. Jangan m
 - Environment Variables: `DATABASE_URL`, `AUTH_SECRET`
 - Node.js: gunakan versi yang didukung project/Vercel.
 
+## Informasi Login
+
+Aplikasi memiliki tiga jenis akun. Credential login tidak disimpan langsung di repository. Username dan password akun demo ditentukan melalui environment variable seed agar credential produksi tidak terekspos di GitHub.
+
+| Role | Username | Password |
+|---|---|---|
+| Admin / Pemilik Kos | nilai `SEED_ADMIN_USERNAME` | nilai `SEED_ADMIN_PASSWORD` |
+| User / Karyawan | nilai `SEED_USER_USERNAME` | nilai `SEED_USER_PASSWORD` |
+| Penyewa / Tenant | nilai `SEED_TENANT_USERNAME` | nilai `SEED_TENANT_PASSWORD` |
+
+### Catatan login
+- Akun Admin digunakan untuk pengelolaan penuh data kos.
+- Akun User/Karyawan digunakan untuk operasional kos, termasuk melihat kamar, penyewa, tagihan, dan memeriksa bukti pembayaran sesuai hak aksesnya.
+- Akun Tenant digunakan untuk portal penyewa dan hanya dapat mengakses data yang terkait dengan penyewa tersebut.
+- Variabel `SEED_TENANT_USERNAME` dan `SEED_TENANT_PASSWORD` bersifat opsional. Akun tenant hanya dibuat ketika kedua variabel tersebut diisi.
+- Untuk environment production, jangan menuliskan password asli di README atau source code. Simpan credential melalui Environment Variables/secret manager.
+
 ## Catatan
 Build dan koneksi MySQL perlu diverifikasi pada environment yang memiliki akses dependency install dan database sebenarnya; repository ini tidak menyimpan credential database.
 
