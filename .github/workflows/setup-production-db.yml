@@ -42,3 +42,31 @@ jobs:
 
       - name: Seed production accounts
         run: npm run seed
+
+      - name: Verify required room inventory
+        run: |
+          node --input-type=module <<'NODE'
+          import { PrismaClient } from '@prisma/client';
+          const db = new PrismaClient();
+          try {
+            const expected = [
+              ['102', 1000000], ['103', 1000000], ['104', 1000000], ['105', 1000000], ['106', 1000000],
+              ['107', 2000000], ['108', 2000000], ['109', 2000000], ['110', 2000000], ['111', 2000000],
+            ];
+            const rooms = await db.room.findMany({
+              where: { number: { in: expected.map(([number]) => number) }, deletedAt: null },
+              select: { number: true, costPerMonth: true },
+              orderBy: { number: 'asc' },
+            });
+            const actual = rooms.map((room) => [room.number, Number(room.costPerMonth)]);
+            const ok = expected.length === actual.length && expected.every(([number, price], i) => actual[i]?.[0] === number && actual[i]?.[1] === price);
+            if (!ok) {
+              console.error('Room inventory verification failed. Expected:', JSON.stringify(expected));
+              console.error('Actual:', JSON.stringify(actual));
+              process.exit(1);
+            }
+            console.log('Required room inventory OK:', JSON.stringify(actual));
+          } finally {
+            await db.$disconnect();
+          }
+          NODE
