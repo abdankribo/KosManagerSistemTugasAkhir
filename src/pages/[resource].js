@@ -125,6 +125,27 @@ export default function Resource(){
     <a className="resourceBackDashboard" href="/dashboard">← Dashboard</a>
   </section>)}
   {error&&<div className="error">{error}</div>}
+  {editing&&user.owner&&<section className="card editCard">
+    <div className="sectionTitle">
+      <div><small>EDIT DATA</small><h2>Ubah {info.title.toLowerCase()}</h2><p className="sectionHint">Perubahan ini hanya dapat dilakukan oleh Administrator sebagai pemilik kos.</p></div>
+      <button type="button" className="ghost" onClick={reset}>Batal</button>
+    </div>
+    <form className="grid" onSubmit={save}>
+      {info.fields.map(([key,label,type])=>{
+        const isSelf=resource==='users'&&editing===user.id;
+        if(type==='role') return <label key={key}>{label}<select value={form[key]||'STAFF'} onChange={e=>change(key,e.target.value)} disabled={isSelf}><option value="ADMIN">Administrator / Pemilik Kos</option><option value="STAFF">Karyawan / Pembantu</option><option value="TENANT">Penyewa</option></select>{isSelf&&<small className="fieldHint">Peran akun yang sedang digunakan tidak dapat diubah dari sini.</small>}</label>;
+        if(type==='renter') return <label key={key}>{label}<select value={form[key]||''} onChange={e=>change(key,Number(e.target.value))}><option value="">Pilih penyewa</option>{(refs.renter||[]).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>;
+        if(type==='room') return <label key={key}>{label}<select value={form[key]||''} onChange={e=>change(key,Number(e.target.value))}><option value="">Pilih kamar</option>{(refs.room||[]).map(x=><option key={x.id} value={x.id}>Kamar {x.number}</option>)}</select></label>;
+        if(type==='lodging') return <label key={key}>{label}<select value={form[key]||''} onChange={e=>change(key,Number(e.target.value))}><option value="">Pilih penginapan</option>{(refs.lodging||[]).map(x=><option key={x.id} value={x.id}>{optionLabel('lodging',x)}</option>)}</select></label>;
+        if(type==='bill') return <label key={key}>{label}<select value={form[key]||''} onChange={e=>change(key,Number(e.target.value))}><option value="">Pilih tagihan</option>{(refs.bill||[]).map(x=><option key={x.id} value={x.id}>{optionLabel('bill',x)}</option>)}</select></label>;
+        if(type==='invoice') return <label key={key}>{label}<select value={form[key]||''} onChange={e=>change(key,Number(e.target.value))}><option value="">Pilih invoice</option>{(refs.invoice||[]).map(x=><option key={x.id} value={x.id}>{optionLabel('invoice',x)}</option>)}</select></label>;
+        const value=form[key]??'';
+        const placeholder=resource==='users'&&key==='password'&&editing?'Kosongkan jika tidak ingin mengubah password':'';
+        return <label key={key}>{label}<input type={type} value={value} placeholder={placeholder} onChange={e=>change(key,e.target.value)} required={!(resource==='users'&&key==='password'&&editing)} /></label>;
+      })}
+      <div className="actions"><button type="submit">Simpan perubahan</button><button type="button" className="ghost" onClick={reset}>Batal</button></div>
+    </form>
+  </section>}
   {resource==='users'&&createdCredentials&&<section className="card credentialCard"><div className="sectionTitle"><div><small>AKUN BERHASIL DIBUAT</small><h2>Serahkan akses ini kepada penyewa</h2></div><button type="button" className="ghost" onClick={()=>setCreatedCredentials(null)}>Tutup</button></div><p className="credentialNote">Simpan atau berikan kredensial ini kepada penyewa. Password hanya ditampilkan sekali di halaman ini.</p><div className="credentialGrid"><div><span>Username</span><strong>{createdCredentials.username}</strong></div><div><span>Password</span><strong>{createdCredentials.password}</strong></div></div><div className="credentialTip">Akun ini sudah terhubung ke data penyewa {createdCredentials.name||'tersebut'}.</div></section>}
   <section className="featureGuide"><div className="featureGuideIcon">{resource==='rooms'?'▣':resource==='renters'?'♙':resource==='lodgings'?'⌂':resource==='bills'?'▤':resource==='payments'?'✓':resource==='invoices'?'▥':'U'}</div><div><span className="userEyebrow">TENTANG FITUR</span><h2>{info.title}</h2><p>{resource==='renters'&&!user.owner?'Terima penyewa baru dalam satu langkah: pilih kamar yang tersedia, isi data penyewa, dan buat akun login sekaligus.':' '+info.description}</p></div></section>
   {resource==='renters'&&!user.owner ? <section className="card onboardingCard">
@@ -171,7 +192,7 @@ export default function Resource(){
       <div className="muted">{resource==='lodgings'&&x.startAt?new Date(x.startAt).toLocaleDateString('id-ID')+' — '+(x.endAt?new Date(x.endAt).toLocaleDateString('id-ID'):'berjalan'):resource==='payments'&&x.paymentDate?'Tanggal bayar: '+new Date(x.paymentDate).toLocaleDateString('id-ID'):''}</div>
       {resource==='payments'&&x.proofName&&<div className="paymentProofArea"><button type="button" className="proofButton" onClick={()=>setSelectedProof({id:x.id,name:x.proofName})}>Lihat bukti pembayaran</button><img className="paymentProofThumb" src={'/api/payments/'+x.id+'/proof'} alt="Bukti pembayaran" onError={e=>{e.currentTarget.style.display='none'}}/></div>}
     </div>
-    <div className="rowActions">{resource==='payments'&&x.status==='PENDING'&&<><button className="approveButton" onClick={()=>verifyPayment(x.id,'APPROVED')}>✓ Terima</button><button className="rejectButton" onClick={()=>verifyPayment(x.id,'REJECTED')}>✕ Tolak</button></>}{resource!=='payments'&&<button className="ghost" onClick={()=>edit(x)}>Edit</button>}{resource==='payments'&&user.owner&&<button className="ghost" onClick={()=>edit(x)}>Edit</button>}{user.owner&&<button className="danger" onClick={()=>remove(x.id)}>Hapus</button>}</div>
+    <div className="rowActions">{resource==='payments'&&x.status==='PENDING'&&<><button className="approveButton" onClick={()=>verifyPayment(x.id,'APPROVED')}>✓ Terima</button><button className="rejectButton" onClick={()=>verifyPayment(x.id,'REJECTED')}>✕ Tolak</button></>}{resource!=='payments'&&user.owner&&<button className="ghost" onClick={()=>edit(x)}>Edit</button>}{resource==='payments'&&user.owner&&<button className="ghost" onClick={()=>edit(x)}>Edit</button>}{user.owner&&<button className="danger" onClick={()=>remove(x.id)}>Hapus</button>}</div>
    </article>)}</div>}
   </section>
   </div>
