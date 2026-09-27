@@ -56,7 +56,7 @@ export default function Resource(){
   setRefs(next);
  }
  useEffect(()=>{fetch('/api/auth/me').then(async r=>{if(!r.ok){router.replace('/login');return;}const body=await r.json();setUser(body.user);});},[router]);
- useEffect(()=>{load();loadRefs();if(resource==='renters'&&!user?.owner)loadAvailableRooms(onboardForm.startAt);},[resource,query,user?.owner]);
+ useEffect(()=>{load();loadRefs();if((resource==='renters'||resource==='rooms')&&!user?.owner)loadAvailableRooms(onboardForm.startAt);},[resource,query,user?.owner]);
  async function loadAvailableRooms(date){const x=await fetch('/api/rooms/available?date='+encodeURIComponent(date||new Date().toISOString().slice(0,10)));if(x.ok)setAvailableRooms(await x.json());}
  const roomIsAvailable=(id)=>availableRooms.some(x=>x.id===id);
  function changeOnboard(k,v){setOnboardForm(f=>({...f,[k]:v}));if(k==='startAt')loadAvailableRooms(v);}
