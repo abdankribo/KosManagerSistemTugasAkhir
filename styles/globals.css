@@ -62,3 +62,18 @@
 .roomAvailabilityToolbar>div strong{font-size:22px;color:#087f76}
 .roomAvailabilityToolbar>div span{font-size:9px;color:#718992}
 @media(max-width:600px){.roomAvailabilityToolbar{display:block}.roomAvailabilityToolbar>div{margin-top:10px}}
+
+
+/* Secure payment proof preview */
+.paymentProofThumb{display:block;width:170px;height:105px;object-fit:contain;margin-top:10px;border:1px solid #dce8eb;border-radius:10px;background:#fff;cursor:zoom-in}
+.userMain .proofButton{border:1px solid #b7ded9;background:#fff;border-radius:9px;padding:8px 11px;font-size:10px;font-weight:800;cursor:pointer;margin-top:8px}
+.userMain .proofButton:hover{background:#f0fdf9}
+.proofModal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px}
+.proofModalBackdrop{position:absolute;inset:0;background:rgba(9,30,38,.72)}
+.proofModalCard{position:relative;z-index:1;width:min(900px,94vw);max-height:92vh;background:#fff;border:1px solid #dce8eb;border-radius:17px;box-shadow:0 24px 70px rgba(0,0,0,.25);padding:18px;display:flex;flex-direction:column}
+.proofModalHeader{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:14px}
+.proofModalHeader small{font-size:9px;color:#087f76;font-weight:900;letter-spacing:.08em}
+.proofModalHeader h2{font-size:16px;color:#123448;margin:4px 0 0;word-break:break-word}
+.proofModalImageWrap{display:grid;place-items:center;min-height:220px;max-height:calc(92vh - 105px);overflow:auto;background:#f5fafb;border:1px solid #e2ecef;border-radius:12px;padding:12px}
+.proofModalImageWrap img{display:block;max-width:100%;max-height:calc(92vh - 135px);width:auto;height:auto;object-fit:contain;border-radius:8px}
+@media(max-width:600px){.proofModal{padding:10px}.proofModalCard{width:100%;padding:12px}.paymentProofThumb{width:145px;height:90px}}
