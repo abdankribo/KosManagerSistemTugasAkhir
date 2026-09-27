@@ -41,7 +41,11 @@ export default function Resource(){
  async function load(){
   if(!info)return;
   setLoading(true);
-  const x=await fetch('/api/'+resource+(query?'?q='+encodeURIComponent(query):''));
+  const params=new URLSearchParams();
+  if(query)params.set('q',query);
+  if(resource==='rooms'&&!user?.owner)params.set('date',onboardForm.startAt||new Date().toISOString().slice(0,10));
+  const qs=params.toString();
+  const x=await fetch('/api/'+resource+(qs?'?'+qs:''));
   if(x.status===401){router.replace('/login');return;}
   if(x.status===403){setError(resource==='users'?'Halaman Users hanya dapat diakses administrator.':'Akses ditolak untuk akun ini.');setItems([]);setLoading(false);return;}
   setItems(x.ok?await x.json():[]);
@@ -165,10 +169,10 @@ export default function Resource(){
     </form>
   </section> : null}
   {resource==='rooms'&&!user.owner ? <section className="card staffRoomPage">
-    <div className="sectionTitle"><div><small>INFORMASI KAMAR</small><h2>Kamar kosong & terisi</h2><p className="sectionHint">Karyawan hanya melihat ketersediaan kamar. Penambahan, perubahan harga, ukuran, dan fasilitas kamar dilakukan oleh Administrator.</p></div></div>
+    <div className="sectionTitle"><div><small>INFORMASI KAMAR</small><h2>Daftar kamar kos</h2><p className="sectionHint">Karyawan dapat melihat status kamar, nama penyewa yang menempati, dan harga sewa. Perubahan data kamar tetap dikelola oleh Administrator.</p></div></div>
     <div className="roomAvailabilityToolbar">
-      <label>Tanggal pengecekan<input type="date" value={onboardForm.startAt||''} onChange={e=>{setOnboardForm(f=>({...f,startAt:e.target.value}));loadAvailableRooms(e.target.value)}}/></label>
-      <div><strong>{availableRooms.length}</strong><span>kamar tersedia</span></div>
+      <label>Tanggal pengecekan<input type="date" value={onboardForm.startAt||''} onChange={e=>{setOnboardForm(f=>({...f,startAt:e.target.value}));loadAvailableRooms(e.target.value);load()}}/></label>
+      <div><strong>{availableRooms.length}</strong><span>kamar kosong</span></div>
     </div>
     <div className="staffRoomGrid">
       {items.map(room=>{
@@ -177,6 +181,11 @@ export default function Resource(){
           <div className="staffRoomCardTop"><strong>Kamar {room.number}</strong><span>{available?'KOSONG':'TERISI'}</span></div>
           <b>Rp {Number(room.costPerMonth||0).toLocaleString('id-ID')}<small>/bulan</small></b>
           <small>{room.length||0} × {room.width||0} m · {room.facilities||'Tanpa fasilitas'}</small>
+          <div className="staffRoomOccupant">
+            <span>{available?'STATUS KAMAR':'DIHUNI OLEH'}</span>
+            <strong>{available?'Siap ditempati':(room.occupantName||'Penyewa tidak diketahui')}</strong>
+            {!available&&room.occupantStartAt&&<small>Mulai {new Date(room.occupantStartAt).toLocaleDateString('id-ID')}{room.occupantEndAt?' · s/d '+new Date(room.occupantEndAt).toLocaleDateString('id-ID'):''}</small>}
+          </div>
         </article>;
       })}
     </div>
