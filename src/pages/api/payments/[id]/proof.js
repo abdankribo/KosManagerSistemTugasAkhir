@@ -30,24 +30,17 @@ export default async function handler(req, res) {
         id: true,
         proofData: true,
         proofName: true,
-        invoice: {
-          select: {
-            bill: {
-              select: {
-                lodging: {
-                  select: { renterId: true }
-                }
-              }
-            }
-          }
-        }
+        invoiceId: true
       }
     });
 
     if (!payment) return res.status(404).json({ error: 'Pembayaran tidak ditemukan.' });
 
-    if (role === 'TENANT' && payment.invoice?.bill?.lodging?.renterId !== user.renterId) {
-      return res.status(403).json({ error: 'Anda tidak memiliki akses ke bukti pembayaran ini.' });
+    if (role === 'TENANT') {
+      const invoice = await db.invoice.findFirst({ where: { id: payment.invoiceId, deletedAt: null } });
+      const bill = invoice ? await db.bill.findFirst({ where: { id: invoice.billId, deletedAt: null } }) : null;
+      const lodging = bill ? await db.lodging.findFirst({ where: { id: bill.lodgingId, renterId: user.renterId, deletedAt: null } }) : null;
+      if (!lodging) return res.status(403).json({ error: 'Anda tidak memiliki akses ke bukti pembayaran ini.' });
     }
 
     if (!payment.proofData) return res.status(404).json({ error: 'Bukti pembayaran tidak tersedia.' });
