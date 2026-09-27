@@ -30,7 +30,7 @@ function itemLabel(resource,x,refs){
  if(resource==='lodgings') return '#'+x.id+' · '+(refs.renter?.[x.renterId]||'Penyewa '+x.renterId)+' · Kamar '+x.roomId;
  if(resource==='bills') return '#'+x.id+' · '+x.name+' · Rp '+Number(x.amount||0).toLocaleString('id-ID');
  if(resource==='invoices') return '#'+x.id+' · Tagihan #'+x.billId;
- if(resource==='payments') return '#'+x.id+' · Rp '+Number(x.amount||0).toLocaleString('id-ID')+' · '+x.description+' · '+(x.status==='APPROVED'?'Diterima':x.status==='REJECTED'?'Ditolak':'Menunggu verifikasi');
+ if(resource==='payments') return (x.renterName||'Penyewa tidak diketahui')+' · Rp '+Number(x.amount||0).toLocaleString('id-ID')+' · '+x.description+' · '+(x.status==='APPROVED'?'Diterima':x.status==='REJECTED'?'Ditolak':'Menunggu verifikasi');
  return '#'+x.id+' · '+(x.firstName||'')+' '+(x.lastName||'')+' · '+roleLabel(x.role,x.owner)+' · '+x.email;
 }
 
