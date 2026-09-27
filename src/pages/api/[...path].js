@@ -126,6 +126,30 @@ export default async function handler(req,res){
         ? await model.findMany({where,orderBy:{id:'desc'},take:200,select:{id:true,invoiceId:true,description:true,amount:true,status:true,paymentDate:true,proofName:true,verifiedAt:true,verifiedByUserId:true,createdAt:true}})
         : await model.findMany({where,orderBy:resource==='rooms'?{number:'asc'}:{id:'desc'},take:200});
       if(resource==='payments') rows=await addPaymentRenterNames(rows);
+      if(resource==='rooms'){
+        const requestedDate=req.query.date ? new Date(String(req.query.date)+'T00:00:00') : new Date();
+        if(Number.isNaN(requestedDate.getTime())) return res.status(400).json({error:'Tanggal pengecekan tidak valid'});
+        requestedDate.setHours(0,0,0,0);
+        const requestedEnd=new Date(requestedDate);
+        requestedEnd.setHours(23,59,59,999);
+        const lodgings=await db.lodging.findMany({
+          where:{deletedAt:null,startAt:{lte:requestedEnd},OR:[{endAt:null},{endAt:{gte:requestedDate}}]},
+          select:{roomId:true,renterId:true,startAt:true,endAt:true}
+        });
+        const renterIds=[...new Set(lodgings.map(row=>row.renterId).filter(Number.isInteger))];
+        const renters=renterIds.length?await db.renter.findMany({where:{id:{in:renterIds},deletedAt:null},select:{id:true,name:true}}):[];
+        const renterMap=new Map(renters.map(row=>[row.id,row.name]));
+        const lodgingMap=new Map(lodgings.map(row=>[row.roomId,row]));
+        rows=rows.map(room=>{
+          const lodging=lodgingMap.get(room.id);
+          return {
+            ...room,
+            occupantName:lodging?renterMap.get(lodging.renterId)||null:null,
+            occupantStartAt:lodging?.startAt||null,
+            occupantEndAt:lodging?.endAt||null
+          };
+        });
+      }
       if(resource==='users') rows.forEach(row=>delete row.password);
       return res.json(rows);
     }
