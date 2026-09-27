@@ -96,7 +96,7 @@ export default async function handler(req,res){
         const field=resource==='rooms'?'number':resource==='renters'?'name':resource==='bills'?'name':'description';
         where={...where,[field]:{contains:q}};
       }
-      const rows=await model.findMany({where,orderBy:{id:'desc'},take:200});
+      const rows=await model.findMany({where,orderBy:resource==='rooms'?{number:'asc'}:{id:'desc'},take:200});
       if(resource==='users') rows.forEach(row=>delete row.password);
       return res.json(rows);
     }
