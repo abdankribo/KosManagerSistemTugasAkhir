@@ -50,9 +50,20 @@ export default function Resource(){
  async function loadRefs(){
   if(!info)return;
   const types=[...new Set(info.fields.map(f=>f[2]).filter(t=>['renter','room','lodging','bill','invoice'].includes(t)))];
+  if(resource==='rooms') types.push('renter','lodging');
   const next={};
   for(const type of types){const x=await fetch('/api/'+type+'s');if(x.ok)next[type]=await x.json();}
   next.renterMap=Object.fromEntries((next.renter||[]).map(x=>[x.id,x.name]));
+  if(resource==='rooms'){
+    const now=Date.now();
+    const occupancy={};
+    for(const lodging of (next.lodging||[])){
+      const start=lodging.startAt?new Date(lodging.startAt).getTime():0;
+      const end=lodging.endAt?new Date(lodging.endAt).getTime():Infinity;
+      if(start<=now && end>=now && !occupancy[lodging.roomId]) occupancy[lodging.roomId]={...lodging,renterName:next.renterMap[lodging.renterId]||'Penyewa tidak diketahui'};
+    }
+    next.roomOccupancy=occupancy;
+  }
   setRefs(next);
  }
  useEffect(()=>{fetch('/api/auth/me').then(async r=>{if(!r.ok){router.replace('/login');return;}const body=await r.json();setUser(body.user);});},[router]);
@@ -148,6 +159,30 @@ export default function Resource(){
   </section>}
   {resource==='users'&&createdCredentials&&<section className="card credentialCard"><div className="sectionTitle"><div><small>AKUN BERHASIL DIBUAT</small><h2>Serahkan akses ini kepada penyewa</h2></div><button type="button" className="ghost" onClick={()=>setCreatedCredentials(null)}>Tutup</button></div><p className="credentialNote">Simpan atau berikan kredensial ini kepada penyewa. Password hanya ditampilkan sekali di halaman ini.</p><div className="credentialGrid"><div><span>Username</span><strong>{createdCredentials.username}</strong></div><div><span>Password</span><strong>{createdCredentials.password}</strong></div></div><div className="credentialTip">Akun ini sudah terhubung ke data penyewa {createdCredentials.name||'tersebut'}.</div></section>}
   <section className="featureGuide"><div className="featureGuideIcon">{resource==='rooms'?'▣':resource==='renters'?'♙':resource==='lodgings'?'⌂':resource==='bills'?'▤':resource==='payments'?'✓':resource==='invoices'?'▥':'U'}</div><div><span className="userEyebrow">TENTANG FITUR</span><h2>{info.title}</h2><p>{resource==='renters'&&!user.owner?'Terima penyewa baru dalam satu langkah: pilih kamar yang tersedia, isi data penyewa, dan buat akun login sekaligus.':' '+info.description}</p></div></section>
+  {resource==='rooms'&&user.owner&&<section className="card adminRoomOverview">
+    <div className="sectionTitle">
+      <div><small>MONITOR HUNIAN</small><h2>Daftar kamar & penghuni</h2><p className="sectionHint">Admin dapat langsung melihat kamar yang kosong, siapa yang menempati kamar, dan harga sewa per bulan.</p></div>
+      <span className="muted">{items.length} kamar</span>
+    </div>
+    <div className="adminRoomGrid">
+      {items.map(room=>{
+        const occupant=refs.roomOccupancy?.[room.id];
+        return <article className={'adminRoomCard '+(occupant?'isOccupied':'isAvailable')} key={room.id}>
+          <div className="adminRoomCardTop">
+            <div><span>KAMAR</span><strong>{room.number}</strong></div>
+            <b>{occupant?'TERISI':'KOSONG'}</b>
+          </div>
+          <div className="adminRoomPrice">Rp {Number(room.costPerMonth||0).toLocaleString('id-ID')}<small>/bulan</small></div>
+          <div className="adminRoomOccupant">
+            <span>{occupant?'PENYEWA SAAT INI':'STATUS HUNIAN'}</span>
+            <strong>{occupant?occupant.renterName:'Belum ada penyewa'}</strong>
+            {occupant?.startAt&&<small>Mulai {new Date(occupant.startAt).toLocaleDateString('id-ID')}</small>}
+          </div>
+          <div className="adminRoomMeta">{room.length||0} × {room.width||0} m · {room.facilities||'Tanpa fasilitas'}</div>
+        </article>;
+      })}
+    </div>
+  </section>}
   {resource==='renters'&&!user.owner ? <section className="card onboardingCard">
     <div className="sectionTitle"><div><small>PROSES PENYEWA BARU</small><h2>Terima penyewa</h2><p className="sectionHint">Pilih kamar yang tersedia, masukkan data penyewa, lalu sistem otomatis membuat penginapan, tagihan sewa, invoice, dan akun penyewa.</p></div></div>
     {onboardResult&&<div className="onboardSuccess"><strong>Penyewa berhasil ditambahkan.</strong><span>Kamar {onboardResult.room.number} · Rp {Number(onboardResult.room.costPerMonth).toLocaleString('id-ID')}/bulan</span><span>Username: <b>{onboardResult.tenant.username}</b></span><span>Berikan username dan password yang kamu buat kepada penyewa.</span></div>}
