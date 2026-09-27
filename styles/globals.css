@@ -77,3 +77,4 @@
 .proofModalImageWrap{display:grid;place-items:center;min-height:220px;max-height:calc(92vh - 105px);overflow:auto;background:#f5fafb;border:1px solid #e2ecef;border-radius:12px;padding:12px}
 .proofModalImageWrap img{display:block;max-width:100%;max-height:calc(92vh - 135px);width:auto;height:auto;object-fit:contain;border-radius:8px}
 @media(max-width:600px){.proofModal{padding:10px}.proofModalCard{width:100%;padding:12px}.paymentProofThumb{width:145px;height:90px}}
+.paymentStatusIcon{display:inline-grid;place-items:center;width:24px;height:24px;margin-left:8px;border-radius:999px;font-size:15px;font-weight:950;vertical-align:middle;line-height:1}.paymentStatusIcon.isApproved{background:#dcfce7;color:#166534}.paymentStatusIcon.isRejected{background:#fee2e2;color:#991b1b}.paymentStatusIcon.isPending{background:#fef3c7;color:#92400e}
