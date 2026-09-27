@@ -81,3 +81,244 @@
 /* Elegant payment cards */
 .paymentRow{align-items:flex-start;padding:18px 20px;background:linear-gradient(180deg,#ffffff,#f8fbfc);border:1px solid #dce8ec;border-radius:16px;box-shadow:0 5px 18px #0f172a0a;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.paymentRow:hover{transform:translateY(-1px);box-shadow:0 9px 24px #0f172a12;border-color:#b8dfe0}.paymentRowContent{min-width:0;flex:1}.paymentTitle{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.paymentTitle b{font-size:14px;line-height:1.5;color:#123b4a}.paymentStatusIcon{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:28px;padding:0 10px;margin-left:0;border-radius:999px;font-size:11px;font-weight:850;letter-spacing:.1px;vertical-align:middle;white-space:nowrap}.paymentStatusIcon.isApproved{background:#e9f9f0;color:#147a4a;border:1px solid #bce8ce}.paymentStatusIcon.isRejected{background:#fff0f0;color:#b4232f;border:1px solid #f5c5ca}.paymentStatusIcon.isPending{background:#fff7e6;color:#9a6700;border:1px solid #f1d49a}.paymentProofArea{display:flex;align-items:flex-start;gap:12px;margin-top:12px}.paymentProofArea .proofButton{margin-top:0;height:36px}.paymentProofThumb{width:72px;height:72px;object-fit:cover;border-radius:10px;margin-top:0;border:1px solid #d8e4e8;background:#f8fafc}.paymentRow .rowActions{align-self:center;flex-shrink:0}.paymentRow .approveButton,.paymentRow .rejectButton{min-width:92px;padding:9px 13px}.paymentRow .muted{margin-top:5px}.paymentRow .proofButton{border-color:#b9dedd;background:#f1fbfa;color:#087f78}.paymentRow .proofButton:hover{background:#e2f7f5}
 @media (max-width:760px){.paymentRow{flex-direction:column}.paymentRow .rowActions{width:100%;justify-content:flex-start}.paymentProofArea{flex-wrap:wrap}}
+
+/* =========================================================
+   Admin workspace refresh — high contrast & modern controls
+   ========================================================= */
+.app:not(.userDashboard):not(.adminDashboard){
+  max-width:1440px;
+  min-height:100vh;
+  padding:30px 34px 50px;
+  color:#172033;
+  background:#f3f6fa;
+}
+.app:not(.userDashboard):not(.adminDashboard) .topbar{
+  min-height:58px;
+  padding:12px 16px;
+  margin-bottom:22px;
+  background:#0b1220;
+  border:1px solid #1e2b42;
+  border-radius:16px;
+  box-shadow:0 12px 30px rgba(15,23,42,.14);
+}
+.app:not(.userDashboard):not(.adminDashboard) .brand{
+  color:#fff!important;
+  font-size:18px;
+}
+.app:not(.userDashboard):not(.adminDashboard) .topbar .muted{color:#9fb0c7}
+.app:not(.userDashboard):not(.adminDashboard) .topbar nav{gap:5px}
+.app:not(.userDashboard):not(.adminDashboard) .topbar nav a{
+  color:#dbe7f5;
+  padding:9px 11px;
+  border-radius:9px;
+  font-size:12px;
+  font-weight:750;
+  transition:.18s ease;
+}
+.app:not(.userDashboard):not(.adminDashboard) .topbar nav a:hover,
+.app:not(.userDashboard):not(.adminDashboard) .topbar nav .activeNav{
+  color:#fff;
+  background:#17365c;
+}
+.app:not(.userDashboard):not(.adminDashboard) .topbar>a:last-child{
+  color:#0b1220;
+  background:#f8fbff;
+  border:1px solid #dce8f4;
+  border-radius:10px;
+  padding:9px 13px;
+  font-size:12px;
+  font-weight:850;
+}
+.app:not(.userDashboard):not(.adminDashboard) .pageHead{
+  position:relative;
+  overflow:hidden;
+  min-height:190px;
+  padding:36px 38px;
+  margin-bottom:18px;
+  align-items:center;
+  background:linear-gradient(120deg,#0b1220 0%,#122b4a 55%,#174e68 100%);
+  border:1px solid #214c70;
+  border-radius:24px;
+  box-shadow:0 20px 50px rgba(11,18,32,.20);
+}
+.app:not(.userDashboard):not(.adminDashboard) .pageHead:after{
+  content:"";
+  position:absolute;
+  width:300px;height:300px;
+  right:-100px;top:-160px;
+  border-radius:50%;
+  background:rgba(38,211,198,.13);
+  pointer-events:none;
+}
+.app:not(.userDashboard):not(.adminDashboard) .pageHead>div{position:relative;z-index:1}
+.app:not(.userDashboard):not(.adminDashboard) .pageHead small{
+  color:#55e1d3;
+  font-weight:900;
+  letter-spacing:.16em;
+}
+.app:not(.userDashboard):not(.adminDashboard) .pageHead h1{
+  color:#fff;
+  font-size:42px;
+  letter-spacing:-.04em;
+  margin:9px 0 7px;
+}
+.app:not(.userDashboard):not(.adminDashboard) .pageHead p{
+  color:#bcd0e3;
+  max-width:760px;
+  line-height:1.55;
+}
+.app:not(.userDashboard):not(.adminDashboard) .pageHead .search{
+  position:relative;
+  z-index:2;
+  width:min(330px,100%);
+  height:44px;
+  padding:0 14px;
+  border:1px solid #3b5875;
+  border-radius:12px;
+  background:#f8fbff;
+  box-shadow:0 8px 20px rgba(0,0,0,.12);
+  outline:none;
+}
+.app:not(.userDashboard):not(.adminDashboard) .pageHead .search:focus{
+  border-color:#2dd4bf;
+  box-shadow:0 0 0 3px rgba(45,212,191,.18);
+}
+.app:not(.userDashboard):not(.adminDashboard) .featureGuide{
+  margin-top:0;
+  padding:19px 21px;
+  background:linear-gradient(135deg,#ecfbf9,#fff);
+  border:1px solid #cce7e4;
+  box-shadow:0 8px 22px rgba(15,73,92,.07);
+}
+.app:not(.userDashboard):not(.adminDashboard) .card{
+  margin-top:16px;
+  padding:23px;
+  border:1px solid #d7e1eb;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 8px 25px rgba(15,23,42,.065);
+}
+.app:not(.userDashboard):not(.adminDashboard) .sectionTitle h2{
+  color:#10243a;
+  font-size:20px;
+  letter-spacing:-.02em;
+}
+.app:not(.userDashboard):not(.adminDashboard) .sectionTitle>div>small{
+  color:#147f78;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.14em;
+}
+.app:not(.userDashboard):not(.adminDashboard) .sectionHint{
+  color:#6b7d90;
+}
+.app:not(.userDashboard):not(.adminDashboard) .grid{
+  gap:16px;
+}
+.app:not(.userDashboard):not(.adminDashboard) .grid label{
+  color:#243b53;
+  font-size:12px;
+  font-weight:800;
+}
+.app:not(.userDashboard):not(.adminDashboard) .grid input,
+.app:not(.userDashboard):not(.adminDashboard) .grid select{
+  min-height:43px;
+  margin-top:7px;
+  padding:10px 12px;
+  border:1px solid #cbd8e5;
+  border-radius:10px;
+  color:#12263a;
+  background:#fbfdff;
+  outline:none;
+  transition:.15s ease;
+}
+.app:not(.userDashboard):not(.adminDashboard) .grid input:focus,
+.app:not(.userDashboard):not(.adminDashboard) .grid select:focus{
+  border-color:#16a89b;
+  box-shadow:0 0 0 3px rgba(22,168,155,.12);
+  background:#fff;
+}
+.app:not(.userDashboard):not(.adminDashboard) .grid .actions button:not(.ghost),
+.app:not(.userDashboard):not(.adminDashboard) .actions button:not(.ghost){
+  border:0;
+  background:linear-gradient(135deg,#0f766e,#0b9487);
+  color:#fff;
+  border-radius:10px;
+  padding:11px 17px;
+  font-weight:850;
+  box-shadow:0 7px 16px rgba(15,118,110,.18);
+  transition:.18s ease;
+}
+.app:not(.userDashboard):not(.adminDashboard) .grid .actions button:not(.ghost):hover,
+.app:not(.userDashboard):not(.adminDashboard) .actions button:not(.ghost):hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 20px rgba(15,118,110,.24);
+}
+.app:not(.userDashboard):not(.adminDashboard) .ghost{
+  background:#fff!important;
+  color:#0f766e!important;
+  border:1px solid #a9d9d3!important;
+  border-radius:10px;
+  font-weight:800;
+  transition:.15s ease;
+}
+.app:not(.userDashboard):not(.adminDashboard) .ghost:hover{
+  background:#ecfdf9!important;
+  border-color:#6fc6bc!important;
+}
+.app:not(.userDashboard):not(.adminDashboard) .danger{
+  background:#fff1f2;
+  color:#be123c;
+  border:1px solid #fecdd3;
+  border-radius:10px;
+  font-weight:800;
+}
+.app:not(.userDashboard):not(.adminDashboard) .danger:hover{background:#ffe4e6}
+.app:not(.userDashboard):not(.adminDashboard) .list{gap:9px}
+.app:not(.userDashboard):not(.adminDashboard) .row{
+  min-height:64px;
+  padding:14px 16px;
+  background:#f8fafc;
+  border:1px solid #e1e8ef;
+  border-radius:13px;
+  transition:.16s ease;
+}
+.app:not(.userDashboard):not(.adminDashboard) .row:hover{
+  background:#fff;
+  border-color:#b8d7dc;
+  box-shadow:0 6px 18px rgba(15,23,42,.06);
+  transform:translateY(-1px);
+}
+.app:not(.userDashboard):not(.adminDashboard) .rowMain b,
+.app:not(.userDashboard):not(.adminDashboard) .paymentTitle b{
+  color:#122b40;
+}
+.app:not(.userDashboard):not(.adminDashboard) .rowActions{
+  align-items:center;
+}
+.app:not(.userDashboard):not(.adminDashboard) .approveButton,
+.app:not(.userDashboard):not(.adminDashboard) .rejectButton{
+  min-height:38px;
+  border-radius:9px;
+  padding:9px 13px;
+  font-size:11px;
+}
+.app:not(.userDashboard):not(.adminDashboard) .editCard{
+  border-color:#9edbd4!important;
+  background:linear-gradient(180deg,#f7fffd,#fff)!important;
+  box-shadow:0 12px 30px rgba(15,118,110,.08)!important;
+}
+.app:not(.userDashboard):not(.adminDashboard) .credentialCard{
+  border-color:#9edbd4!important;
+}
+@media(max-width:900px){
+  .app:not(.userDashboard):not(.adminDashboard){padding:20px 18px 40px}
+  .app:not(.userDashboard):not(.adminDashboard) .topbar{align-items:flex-start}
+  .app:not(.userDashboard):not(.adminDashboard) .topbar nav{width:100%;overflow:auto}
+  .app:not(.userDashboard):not(.adminDashboard) .pageHead{display:block;padding:30px}
+  .app:not(.userDashboard):not(.adminDashboard) .pageHead .search{margin-top:18px}
+}
+@media(max-width:600px){
+  .app:not(.userDashboard):not(.adminDashboard) .pageHead h1{font-size:32px}
+  .app:not(.userDashboard):not(.adminDashboard) .card{padding:17px}
+}
