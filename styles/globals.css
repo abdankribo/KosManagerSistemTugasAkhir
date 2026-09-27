@@ -62,6 +62,8 @@
 .roomAvailabilityToolbar>div strong{font-size:22px;color:#087f76}
 .roomAvailabilityToolbar>div span{font-size:9px;color:#718992}
 @media(max-width:600px){.roomAvailabilityToolbar{display:block}.roomAvailabilityToolbar>div{margin-top:10px}}
+.staffRoomOccupant{margin-top:11px;padding-top:9px;border-top:1px dashed #d7e5e8}.staffRoomOccupant span,.staffRoomOccupant strong,.staffRoomOccupant small{display:block}.staffRoomOccupant span{font-size:7px;letter-spacing:.1em;font-weight:950;color:#6b8790}.staffRoomOccupant strong{font-size:10px;color:#17384a;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.staffRoomOccupant small{font-size:8px;color:#718992;margin-top:3px;line-height:1.4}.staffRoomCard.isOccupied .staffRoomOccupant strong{color:#9f3f35}.staffRoomCard.isAvailable .staffRoomOccupant strong{color:#087f76}.staffRoomCard.isAvailable .staffRoomOccupant{border-top-color:#b9e3db}.staffRoomCard.isOccupied .staffRoomOccupant{border-top-color:#efd2cb}
+@media(max-width:650px){.staffRoomOccupant strong{font-size:9px}}
 
 
 /* Secure payment proof preview */
