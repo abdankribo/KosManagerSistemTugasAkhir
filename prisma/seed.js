@@ -96,6 +96,46 @@ async function main() {
     }
   }
 
+  // Give the demo tenant a real room, lodging, bill, and invoice so the
+  // tenant account can exercise the complete payment workflow immediately.
+  if (tenantUsername && tenantPassword) {
+    const tenant = await db.user.findUnique({ where: { email: tenantUsername.toLowerCase() } });
+    if (tenant?.renterId) {
+      const demoRoomsAvailable = await db.room.findMany({
+        where: { deletedAt: null },
+        orderBy: { number: 'asc' },
+      });
+      const activeLodgings = await db.lodging.findMany({
+        where: { deletedAt: null, startAt: { lte: new Date() }, OR: [{ endAt: null }, { endAt: { gte: new Date() } }] },
+        select: { roomId: true },
+      });
+      const occupiedRoomIds = new Set(activeLodgings.map((item) => item.roomId));
+      const demoRoom = demoRoomsAvailable.find((room) => !occupiedRoomIds.has(room.id));
+      if (demoRoom) {
+        const activeLodging = await db.lodging.findFirst({
+          where: { renterId: tenant.renterId, deletedAt: null, endAt: null },
+        });
+        const lodging = activeLodging || await db.lodging.create({
+          data: { renterId: tenant.renterId, roomId: demoRoom.id, startAt: new Date() },
+        });
+        const existingBill = await db.bill.findFirst({ where: { lodgingId: lodging.id, deletedAt: null } });
+        const bill = existingBill || await db.bill.create({
+          data: {
+            lodgingId: lodging.id,
+            name: 'Sewa Kamar',
+            description: 'Tagihan demo sewa kamar ' + demoRoom.number,
+            amount: demoRoom.costPerMonth,
+            perMonth: true,
+          },
+        });
+        const existingInvoice = await db.invoice.findFirst({ where: { billId: bill.id, deletedAt: null } });
+        if (!existingInvoice) {
+          await db.invoice.create({ data: { billId: bill.id } });
+        }
+      }
+    }
+  }
+
   console.log('Demo accounts seeded.');
 }
 
