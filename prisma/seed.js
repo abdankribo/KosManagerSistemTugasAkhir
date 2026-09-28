@@ -101,7 +101,16 @@ async function main() {
   if (tenantUsername && tenantPassword) {
     const tenant = await db.user.findUnique({ where: { email: tenantUsername.toLowerCase() } });
     if (tenant?.renterId) {
-      const demoRoom = await db.room.findFirst({ where: { number: '102', deletedAt: null } });
+      const demoRoomsAvailable = await db.room.findMany({
+        where: { deletedAt: null },
+        orderBy: { number: 'asc' },
+      });
+      const activeLodgings = await db.lodging.findMany({
+        where: { deletedAt: null, startAt: { lte: new Date() }, OR: [{ endAt: null }, { endAt: { gte: new Date() } }] },
+        select: { roomId: true },
+      });
+      const occupiedRoomIds = new Set(activeLodgings.map((item) => item.roomId));
+      const demoRoom = demoRoomsAvailable.find((room) => !occupiedRoomIds.has(room.id));
       if (demoRoom) {
         const activeLodging = await db.lodging.findFirst({
           where: { renterId: tenant.renterId, deletedAt: null, endAt: null },
