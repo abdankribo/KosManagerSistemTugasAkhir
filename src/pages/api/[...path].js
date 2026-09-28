@@ -80,8 +80,22 @@ function validate(resource,d){
 }
 
 async function overlap(roomId,startAt,endAt,exceptId){
-  if(!startAt||!endAt) return false;
-  return !!await db.lodging.findFirst({where:{roomId,deletedAt:null,id:exceptId?{not:exceptId}:undefined,startAt:{lte:endAt},endAt:{gte:startAt}}});
+  if(!roomId||!startAt) return false;
+  // Two date ranges overlap when the existing stay starts before the new
+  // stay ends (or has no end) AND the existing stay ends after the new
+  // stay starts (or has no end).
+  return !!await db.lodging.findFirst({
+    where:{
+      roomId,
+      deletedAt:null,
+      id:exceptId?{not:exceptId}:undefined,
+      startAt:{lte:endAt||new Date('9999-12-31T23:59:59.999Z')},
+      OR:[
+        {endAt:null},
+        {endAt:{gte:startAt}}
+      ]
+    }
+  });
 }
 
 export default async function handler(req,res){

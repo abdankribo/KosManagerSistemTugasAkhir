@@ -16,14 +16,24 @@ export default async function handler(req,res){
     if(!Number.isInteger(id)||id<=0)return res.status(422).json({error:'Pembayaran tidak valid.'});
     if(!['APPROVED','REJECTED'].includes(action))return res.status(422).json({error:'Status verifikasi tidak valid.'});
 
-    const payment=await db.payment.findFirst({where:{id,deletedAt:null}});
+    const payment=await db.payment.findFirst({
+      where:{id,deletedAt:null},
+      select:{id:true,status:true,description:true}
+    });
     if(!payment)return res.status(404).json({error:'Pembayaran tidak ditemukan.'});
     if(payment.status!=='PENDING')return res.status(409).json({error:'Pembayaran ini sudah diverifikasi.'});
 
     const description=note?payment.description+' · '+note:payment.description;
-    const updated=await db.payment.update({
-      where:{id},
-      data:{status:action,verifiedAt:new Date(),verifiedByUserId:userId,description},
+    // Keep the state transition atomic so two Admin/Karyawan requests cannot
+    // both verify the same pending payment successfully.
+    const result=await db.payment.updateMany({
+      where:{id,deletedAt:null,status:'PENDING'},
+      data:{status:action,verifiedAt:new Date(),verifiedByUserId:userId,description}
+    });
+    if(result.count!==1)return res.status(409).json({error:'Pembayaran ini sudah diverifikasi oleh pengguna lain.'});
+
+    const updated=await db.payment.findFirst({
+      where:{id,deletedAt:null},
       select:{id:true,status:true,verifiedAt:true,verifiedByUserId:true,description:true}
     });
     return res.json({ok:true,payment:updated});
